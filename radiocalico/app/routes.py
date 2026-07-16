@@ -13,6 +13,11 @@ def index():
     return render_template("index.html", items=items, users=users)
 
 
+@bp.route("/player")
+def player():
+    return render_template("player.html")
+
+
 @bp.route("/users", methods=["POST"])
 def add_user():
     name = request.form.get("name", "").strip()
