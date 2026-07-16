@@ -7,9 +7,22 @@
 <body>
   <h1>Radio Calico</h1>
   <p>Local prototype server is running.</p>
-  {% if user %}
-    <p>{{ user.name }} &lt;{{ user.email }}&gt;</p>
-  {% endif %}
+
+  <h2>Users</h2>
+  <ul>
+    {% for user in users %}
+      <li>{{ user.name }} &lt;{{ user.email }}&gt;</li>
+    {% else %}
+      <li>No users yet.</li>
+    {% endfor %}
+  </ul>
+
+  <form action="{{ url_for('main.add_user') }}" method="post">
+    <label>Name: <input type="text" name="name" required></label>
+    <label>Email: <input type="email" name="email" required></label>
+    <button type="submit">Add User</button>
+  </form>
+
   <h2>Items</h2>
   <ul>
     {% for item in items %}

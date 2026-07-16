@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from app import db
 from app.models import Item, User
@@ -9,8 +9,20 @@ bp = Blueprint("main", __name__)
 @bp.route("/")
 def index():
     items = Item.query.all()
-    user = User.query.first()
-    return render_template("index.html", items=items, user=user)
+    users = User.query.all()
+    return render_template("index.html", items=items, users=users)
+
+
+@bp.route("/users", methods=["POST"])
+def add_user():
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip()
+
+    if name and email and not User.query.filter_by(email=email).first():
+        db.session.add(User(name=name, email=email))
+        db.session.commit()
+
+    return redirect(url_for("main.index"))
 
 
 @bp.route("/api/items")
