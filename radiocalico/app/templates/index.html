@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Radio Calico</title>
+</head>
+<body>
+  <h1>Radio Calico</h1>
+  <p>Local prototype server is running.</p>
+  {% if user %}
+    <p>{{ user.name }} &lt;{{ user.email }}&gt;</p>
+  {% endif %}
+  <h2>Items</h2>
+  <ul>
+    {% for item in items %}
+      <li>{{ item.name }} ({{ item.created_at }})</li>
+    {% else %}
+      <li>No items yet.</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
