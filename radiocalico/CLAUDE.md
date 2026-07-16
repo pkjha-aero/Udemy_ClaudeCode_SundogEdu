@@ -22,9 +22,19 @@ Server: http://127.0.0.1:5000
 
 - `app/__init__.py` — app factory, DB init, seeds a default `User` on first run if none exists
 - `app/models.py` — `User` (name, email) and `Item` (name, created_at) models
-- `app/routes.py` — `/` (homepage), `POST /users` (add user via form), `/api/items`, `/api/users`, `/api/health`
-- `app/templates/index.html` — homepage: lists users, has an add-user form, lists items
+- `app/routes.py` — routes for `/`, `/player`, `POST /users`, `/api/items`, `/api/users`, `/api/health`
+- `app/templates/index.html` — homepage: lists users, has an add-user form, lists items, link to player
+- `app/templates/player.html` — HLS radio player page with Play/Pause/Stop controls
 - `run.py` — dev server entrypoint (debug mode on, port 5000)
+- `stream_URL.txt` — CloudFront HLS stream endpoint URL
+
+## Radio Player
+
+- **Route**: `/player` → http://127.0.0.1:5000/player
+- **Stream**: Lossless HLS from CloudFront CDN (m3u8 playlist)
+- **Library**: HLS.js (loaded from CDN) for cross-browser playback
+- **Fallback**: Native HLS support on Safari/iOS
+- **Features**: Play, Pause, Stop buttons; status indicator; responsive design
 
 ## Environment (this machine)
 
@@ -40,6 +50,7 @@ Server: http://127.0.0.1:5000
 
 ## Current state
 
-- A default user (seeded from git config / user email) shows on the homepage.
-- Users can be added via the on-page form (POSTs to `/users`); duplicate emails and empty fields are silently ignored.
-- `Item` model exists but nothing currently creates items (no form yet).
+- Homepage at `/` lists all users, has an add-user form (with duplicate email validation), lists items, and links to the radio player.
+- A default user (Pankaj Jha, pankaj.psu@gmail.com) is seeded on first run.
+- Radio player at `/player` streams lossless audio via HLS.js with Play/Pause/Stop controls.
+- `Item` model exists but no form to create items yet.
