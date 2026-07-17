@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+import secrets
 
 from app import db
-from app.models import Item, User
+from app.models import Item, User, Song, Rating
 
 bp = Blueprint("main", __name__)
 
@@ -45,3 +46,76 @@ def api_users():
 @bp.route("/api/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+@bp.route("/api/song/current")
+def get_current_song():
+    if "session_id" not in session:
+        session["session_id"] = secrets.token_hex(16)
+
+    title = request.args.get("title", "Unknown")
+    artist = request.args.get("artist", "Unknown")
+    album = request.args.get("album", "Unknown")
+    date = request.args.get("date", "")
+
+    song = Song.query.filter_by(title=title, artist=artist).first()
+    if not song:
+        song = Song(title=title, artist=artist, album=album, date=date)
+        db.session.add(song)
+        db.session.commit()
+
+    user_rating = Rating.query.filter_by(
+        song_id=song.id, session_id=session["session_id"]
+    ).first()
+
+    return jsonify(
+        {
+            "id": song.id,
+            "title": song.title,
+            "artist": song.artist,
+            "album": song.album,
+            "date": song.date,
+            "thumbs_up": len([r for r in song.ratings if r.is_thumbs_up]),
+            "thumbs_down": len([r for r in song.ratings if not r.is_thumbs_up]),
+            "user_rating": "up" if user_rating and user_rating.is_thumbs_up else "down" if user_rating else None,
+        }
+    )
+
+
+@bp.route("/api/song/rate", methods=["POST"])
+def rate_song():
+    if "session_id" not in session:
+        session["session_id"] = secrets.token_hex(16)
+
+    data = request.get_json()
+    song_id = data.get("song_id")
+    is_thumbs_up = data.get("is_thumbs_up")
+
+    if not song_id or is_thumbs_up is None:
+        return jsonify({"error": "Missing song_id or is_thumbs_up"}), 400
+
+    song = Song.query.get(song_id)
+    if not song:
+        return jsonify({"error": "Song not found"}), 404
+
+    existing_rating = Rating.query.filter_by(
+        song_id=song_id, session_id=session["session_id"]
+    ).first()
+
+    if existing_rating:
+        existing_rating.is_thumbs_up = is_thumbs_up
+    else:
+        rating = Rating(
+            song_id=song_id, session_id=session["session_id"], is_thumbs_up=is_thumbs_up
+        )
+        db.session.add(rating)
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            "thumbs_up": len([r for r in song.ratings if r.is_thumbs_up]),
+            "thumbs_down": len([r for r in song.ratings if not r.is_thumbs_up]),
+            "user_rating": "up" if is_thumbs_up else "down",
+        }
+    )

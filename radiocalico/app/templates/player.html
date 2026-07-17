@@ -89,6 +89,45 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
+    .rating-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      align-items: center;
+    }
+    .rating-button {
+      background: none;
+      border: 2px solid #e0e0e0;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+    }
+    .rating-button:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+    .rating-button.active {
+      background: #667eea;
+      border-color: #667eea;
+      color: white;
+    }
+    .rating-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: #999;
+    }
+    .rating-button.active .rating-count {
+      color: white;
+    }
     .recently-played {
       margin-bottom: 30px;
     }
@@ -181,6 +220,14 @@
     <div class="now-playing">
       <h2>Now Playing</h2>
       <div id="nowPlayingContent" class="loading">Loading...</div>
+      <div id="ratingSection" class="rating-section" style="display:none;">
+        <button class="rating-button" id="thumbsUpBtn" onclick="rateTrack(true)">
+          👍 <span class="rating-count" id="thumbsUpCount">0</span>
+        </button>
+        <button class="rating-button" id="thumbsDownBtn" onclick="rateTrack(false)">
+          👎 <span class="rating-count" id="thumbsDownCount">0</span>
+        </button>
+      </div>
     </div>
 
     <div class="recently-played">
@@ -211,6 +258,13 @@
     const audio = document.getElementById('audioPlayer');
     const nowPlayingContent = document.getElementById('nowPlayingContent');
     const recentlyPlayedContent = document.getElementById('recentlyPlayedContent');
+    const ratingSection = document.getElementById('ratingSection');
+    const thumbsUpBtn = document.getElementById('thumbsUpBtn');
+    const thumbsDownBtn = document.getElementById('thumbsDownBtn');
+    const thumbsUpCount = document.getElementById('thumbsUpCount');
+    const thumbsDownCount = document.getElementById('thumbsDownCount');
+
+    let currentSongId = null;
 
     function initStream() {
       if (Hls.isSupported()) {
@@ -245,6 +299,8 @@
       `;
       nowPlayingContent.innerHTML = nowPlaying;
 
+      fetchSongRatings(data.title, data.artist, data.album, data.date);
+
       const recentTracks = [];
       for (let i = 1; i <= 5; i++) {
         const artistKey = `prev_artist_${i}`;
@@ -262,6 +318,56 @@
         }
       }
       recentlyPlayedContent.innerHTML = recentTracks.join('');
+    }
+
+    function fetchSongRatings(title, artist, album, date) {
+      const params = new URLSearchParams({
+        title: title,
+        artist: artist,
+        album: album,
+        date: date
+      });
+
+      fetch(`/api/song/current?${params}`)
+        .then(response => response.json())
+        .then(data => {
+          currentSongId = data.id;
+          thumbsUpCount.textContent = data.thumbs_up;
+          thumbsDownCount.textContent = data.thumbs_down;
+          ratingSection.style.display = 'flex';
+
+          thumbsUpBtn.classList.remove('active');
+          thumbsDownBtn.classList.remove('active');
+
+          if (data.user_rating === 'up') {
+            thumbsUpBtn.classList.add('active');
+          } else if (data.user_rating === 'down') {
+            thumbsDownBtn.classList.add('active');
+          }
+        })
+        .catch(error => console.error('Error fetching song ratings:', error));
+    }
+
+    function rateTrack(isThumbsUp) {
+      if (!currentSongId) return;
+
+      fetch('/api/song/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          song_id: currentSongId,
+          is_thumbs_up: isThumbsUp
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          thumbsUpCount.textContent = data.thumbs_up;
+          thumbsDownCount.textContent = data.thumbs_down;
+
+          thumbsUpBtn.classList.toggle('active', data.user_rating === 'up');
+          thumbsDownBtn.classList.toggle('active', data.user_rating === 'down');
+        })
+        .catch(error => console.error('Error submitting rating:', error));
     }
 
     function fetchMetadata() {
