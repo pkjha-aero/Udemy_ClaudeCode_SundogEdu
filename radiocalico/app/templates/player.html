@@ -46,58 +46,8 @@
     }
     audio {
       width: 100%;
-      margin-bottom: 20px;
       cursor: pointer;
-    }
-    .video-wrapper {
-      display: none;
-    }
-    video {
-      width: 100%;
-      border-radius: 8px;
-    }
-    .controls {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-    button {
-      background: #667eea;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: #5568d3;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
-    .status {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 6px;
-      font-size: 14px;
-      min-height: 20px;
-    }
-    .status.loading {
-      background: #e3f2fd;
-      color: #1976d2;
-    }
-    .status.playing {
-      background: #e8f5e9;
-      color: #388e3c;
-    }
-    .status.error {
-      background: #ffebee;
-      color: #c62828;
+      height: 40px;
     }
     .info {
       margin-top: 20px;
@@ -139,18 +89,6 @@
       <audio id="audioPlayer" controls preload="auto">
         Your browser does not support the audio element.
       </audio>
-
-      <div class="video-wrapper">
-        <video id="videoPlayer" controls></video>
-      </div>
-
-      <div class="controls">
-        <button onclick="playStream()">Play</button>
-        <button onclick="pauseStream()">Pause</button>
-        <button onclick="stopStream()">Stop</button>
-      </div>
-
-      <div id="status" class="status"></div>
     </div>
 
     <div class="info">
@@ -173,15 +111,8 @@
   <script>
     const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
     const audio = document.getElementById('audioPlayer');
-    const video = document.getElementById('videoPlayer');
-    const statusDiv = document.getElementById('status');
 
-    function updateStatus(message, type = 'loading') {
-      statusDiv.textContent = message;
-      statusDiv.className = 'status ' + type;
-    }
-
-    function playStream() {
+    function initStream() {
       if (Hls.isSupported()) {
         const hls = new Hls({
           autoStartLoad: true,
@@ -194,47 +125,18 @@
         hls.loadSource(STREAM_URL);
         hls.attachMedia(audio);
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          updateStatus('▶️ Playing...', 'playing');
-          audio.play().catch(() => {
-            updateStatus('⚠️ Playback blocked by browser', 'error');
-          });
-        });
-
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            updateStatus('❌ Stream error: ' + data.type, 'error');
+            console.error('HLS fatal error:', data.type);
             hls.destroy();
           }
         });
-
-        updateStatus('⏳ Loading stream...', 'loading');
       } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
         audio.src = STREAM_URL;
-        audio.play().catch(() => {
-          updateStatus('⚠️ Playback blocked by browser', 'error');
-        });
-        updateStatus('▶️ Playing...', 'playing');
-      } else {
-        updateStatus('❌ HLS not supported in this browser', 'error');
       }
     }
 
-    function pauseStream() {
-      audio.pause();
-      updateStatus('⏸️ Paused', 'loading');
-    }
-
-    function stopStream() {
-      audio.pause();
-      audio.currentTime = 0;
-      updateStatus('⏹️ Stopped', 'loading');
-    }
-
-    // Auto-play on load (may be blocked by browser policy)
-    document.addEventListener('DOMContentLoaded', () => {
-      updateStatus('Ready to play', 'loading');
-    });
+    document.addEventListener('DOMContentLoaded', initStream);
   </script>
 </body>
 </html>
