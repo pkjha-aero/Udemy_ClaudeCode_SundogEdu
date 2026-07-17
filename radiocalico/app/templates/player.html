@@ -23,20 +23,21 @@
       background: white;
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      max-width: 500px;
+      max-width: 600px;
       width: 100%;
       padding: 40px;
-      text-align: center;
     }
     h1 {
       color: #333;
       margin-bottom: 10px;
       font-size: 28px;
+      text-align: center;
     }
     .subtitle {
       color: #666;
       margin-bottom: 30px;
       font-size: 14px;
+      text-align: center;
     }
     .player-wrapper {
       background: #f5f5f5;
@@ -48,6 +49,88 @@
       width: 100%;
       cursor: pointer;
       height: 40px;
+    }
+    .now-playing {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .now-playing h2 {
+      color: #667eea;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 15px;
+    }
+    .track-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .track-artist {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 3px;
+    }
+    .track-album {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 15px;
+    }
+    .track-specs {
+      font-size: 11px;
+      color: #667eea;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .recently-played {
+      margin-bottom: 30px;
+    }
+    .recently-played h2 {
+      color: #333;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .track-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+    .track-item:last-child {
+      border-bottom: none;
+    }
+    .track-item-info {
+      flex: 1;
+    }
+    .track-item-number {
+      color: #ccc;
+      font-weight: 600;
+      margin-right: 12px;
+      min-width: 20px;
+    }
+    .track-item-title {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+    .track-item-artist {
+      color: #999;
+      font-size: 13px;
     }
     .info {
       margin-top: 20px;
@@ -78,6 +161,10 @@
     a:hover {
       text-decoration: underline;
     }
+    .loading {
+      color: #999;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -91,6 +178,16 @@
       </audio>
     </div>
 
+    <div class="now-playing">
+      <h2>Now Playing</h2>
+      <div id="nowPlayingContent" class="loading">Loading...</div>
+    </div>
+
+    <div class="recently-played">
+      <h2>Recently Played</h2>
+      <div id="recentlyPlayedContent" class="loading">Loading...</div>
+    </div>
+
     <div class="info">
       <dl>
         <dt>Stream URL:</dt>
@@ -102,7 +199,7 @@
       </dl>
     </div>
 
-    <p style="margin-top: 20px; font-size: 12px; color: #999;">
+    <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">
       <a href="/">← Back to Home</a>
     </p>
   </div>
@@ -110,7 +207,10 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
   <script>
     const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
+    const METADATA_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json';
     const audio = document.getElementById('audioPlayer');
+    const nowPlayingContent = document.getElementById('nowPlayingContent');
+    const recentlyPlayedContent = document.getElementById('recentlyPlayedContent');
 
     function initStream() {
       if (Hls.isSupported()) {
@@ -136,7 +236,50 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', initStream);
+    function formatMetadata(data) {
+      const nowPlaying = `
+        <div class="track-title">${data.title}</div>
+        <div class="track-artist">${data.artist}</div>
+        <div class="track-album">${data.album} (${data.date})</div>
+        <div class="track-specs">${data.bit_depth}-bit • ${data.sample_rate / 1000}kHz</div>
+      `;
+      nowPlayingContent.innerHTML = nowPlaying;
+
+      const recentTracks = [];
+      for (let i = 1; i <= 5; i++) {
+        const artistKey = `prev_artist_${i}`;
+        const titleKey = `prev_title_${i}`;
+        if (data[artistKey] && data[titleKey]) {
+          recentTracks.push(`
+            <div class="track-item">
+              <span class="track-item-number">${i}</span>
+              <div class="track-item-info">
+                <div class="track-item-title">${data[titleKey]}</div>
+                <div class="track-item-artist">${data[artistKey]}</div>
+              </div>
+            </div>
+          `);
+        }
+      }
+      recentlyPlayedContent.innerHTML = recentTracks.join('');
+    }
+
+    function fetchMetadata() {
+      fetch(METADATA_URL)
+        .then(response => response.json())
+        .then(data => formatMetadata(data))
+        .catch(error => {
+          console.error('Error fetching metadata:', error);
+          nowPlayingContent.innerHTML = '<div class="loading">Unable to load metadata</div>';
+          recentlyPlayedContent.innerHTML = '<div class="loading">Unable to load metadata</div>';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initStream();
+      fetchMetadata();
+      setInterval(fetchMetadata, 10000);
+    });
   </script>
 </body>
 </html>
