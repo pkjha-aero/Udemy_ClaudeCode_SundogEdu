@@ -2,35 +2,294 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Radio Calico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radio Calico - Ad-Free Lossless Music Streaming</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #231F20;
+      background: #FFFFFF;
+      line-height: 1.6;
+    }
+
+    .header {
+      background: #38A29D;
+      color: #FFFFFF;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-family: "Montserrat", sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .header-logo {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 64px 24px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .hero h2 {
+      font-family: "Montserrat", sans-serif;
+      font-size: 36px;
+      font-weight: 600;
+      color: #1F4E23;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: #231F20;
+      margin-bottom: 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      background: #1F4E23;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s ease;
+    }
+
+    .cta-button:hover {
+      background: #38A29D;
+    }
+
+    .section {
+      margin-bottom: 64px;
+    }
+
+    .section h3 {
+      font-family: "Montserrat", sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1F4E23;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #D8F2D5;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #231F20;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    button {
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+
+    input[type="text"],
+    input[type="email"] {
+      border: 1px solid #CCC;
+      width: 100%;
+      max-width: 400px;
+      transition: border-color 0.2s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus {
+      outline: none;
+      border-color: #38A29D;
+      box-shadow: 0 0 0 3px rgba(56, 162, 157, 0.3);
+    }
+
+    button[type="submit"] {
+      background: #1F4E23;
+      color: #FFFFFF;
+      border: none;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button[type="submit"]:hover {
+      background: #38A29D;
+    }
+
+    .form-container {
+      background: #F5EADA;
+      padding: 32px;
+      border-radius: 4px;
+      max-width: 500px;
+      margin-bottom: 32px;
+    }
+
+    .list-section {
+      background: #F5EADA;
+      padding: 32px;
+      border-radius: 4px;
+      margin-bottom: 32px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(31, 78, 35, 0.1);
+      color: #231F20;
+    }
+
+    li:last-child {
+      border-bottom: none;
+    }
+
+    .empty-state {
+      color: #999;
+      font-style: italic;
+    }
+
+    .footer {
+      background: #F5EADA;
+      color: #231F20;
+      text-align: center;
+      padding: 32px 20px;
+      margin-top: 64px;
+    }
+
+    .footer a {
+      color: #38A29D;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 32px 16px;
+      }
+
+      .hero h2 {
+        font-size: 28px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>Radio Calico</h1>
-  <p>Local prototype server is running.</p>
-  <p><a href="{{ url_for('main.player') }}">🎙️ Open Radio Player</a></p>
+  <div class="header">
+    <h1>
+      <div class="header-logo">
+        <img src="{{ url_for('static', filename='radiocalico_logo.png') }}" alt="Radio Calico Logo">
+      </div>
+      Radio Calico
+    </h1>
+  </div>
 
-  <h2>Users</h2>
-  <ul>
-    {% for user in users %}
-      <li>{{ user.name }} &lt;{{ user.email }}&gt;</li>
-    {% else %}
-      <li>No users yet.</li>
-    {% endfor %}
-  </ul>
+  <div class="container">
+    <div class="hero">
+      <h2>Lossless Music Streaming at Its Finest</h2>
+      <p>Experience crystal-clear audio with our ad-free, subscription-free radio service. 24-bit, 48kHz streaming delivered directly to your ears.</p>
+      <a href="{{ url_for('main.player') }}" class="cta-button">▶ Open Player</a>
+    </div>
 
-  <form action="{{ url_for('main.add_user') }}" method="post">
-    <label>Name: <input type="text" name="name" required></label>
-    <label>Email: <input type="email" name="email" required></label>
-    <button type="submit">Add User</button>
-  </form>
+    <div class="section">
+      <h3>Users</h3>
+      <div class="list-section">
+        <ul>
+          {% for user in users %}
+            <li>{{ user.name }} &lt;{{ user.email }}&gt;</li>
+          {% else %}
+            <li class="empty-state">No users yet. Add one below to get started!</li>
+          {% endfor %}
+        </ul>
+      </div>
 
-  <h2>Items</h2>
-  <ul>
-    {% for item in items %}
-      <li>{{ item.name }} ({{ item.created_at }})</li>
-    {% else %}
-      <li>No items yet.</li>
-    {% endfor %}
-  </ul>
+      <div class="form-container">
+        <form action="{{ url_for('main.add_user') }}" method="post">
+          <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <button type="submit">Add User</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Items</h3>
+      <div class="list-section">
+        <ul>
+          {% for item in items %}
+            <li>{{ item.name }} <span style="color: #999;">({{ item.created_at }})</span></li>
+          {% else %}
+            <li class="empty-state">No items yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>© 2025 Radio Calico. Enjoy the music. | <a href="{{ url_for('main.player') }}">Player</a></p>
+  </div>
 </body>
 </html>
