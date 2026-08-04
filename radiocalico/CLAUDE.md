@@ -24,7 +24,7 @@ Server: http://127.0.0.1:5000
 - `app/models.py` — `User` (name, email) and `Item` (name, created_at) models
 - `app/routes.py` — routes for `/`, `/player`, `POST /users`, `/api/items`, `/api/users`, `/api/health`
 - `app/templates/index.html` — homepage: lists users, has an add-user form, lists items, link to player
-- `app/templates/player.html` — HLS radio player page with Play/Pause/Stop controls
+- `app/templates/player.html` — HLS radio player page with custom player controls, dynamic album art, track info display, and song rating system
 - `run.py` — dev server entrypoint (debug mode on, port 5000)
 - `stream_URL.txt` — CloudFront HLS stream endpoint URL
 
@@ -34,7 +34,14 @@ Server: http://127.0.0.1:5000
 - **Stream**: Lossless HLS from CloudFront CDN (m3u8 playlist)
 - **Library**: HLS.js (loaded from CDN) for cross-browser playback
 - **Fallback**: Native HLS support on Safari/iOS
-- **Features**: Play, Pause, Stop buttons; status indicator; responsive design
+- **Layout**: Full-width dark header with two-column design (album art + track info)
+- **Features**:
+  - Custom player controls with play/pause, time display, and volume slider
+  - Dynamic album art loaded from metadata with SVG fallback
+  - Track information display (artist, title, album, quality specs)
+  - Song rating system with thumbs up/down (green/red colors)
+  - Previous tracks list with light green background
+  - Responsive mobile design
 
 ## Environment (this machine)
 
@@ -52,5 +59,11 @@ Server: http://127.0.0.1:5000
 
 - Homepage at `/` lists all users, has an add-user form (with duplicate email validation), lists items, and links to the radio player.
 - A default user (Pankaj Jha, pankaj.psu@gmail.com) is seeded on first run.
-- Radio player at `/player` streams lossless audio via HLS.js with Play/Pause/Stop controls.
+- Radio player at `/player` streams lossless audio via HLS.js with redesigned layout matching RadioCalicoLayout.png mockup.
+  - Full-width dark header with logo and title
+  - Two-column layout with album art and track information
+  - Custom player controls with time and volume adjustment
+  - Dynamic album art from metadata
+  - Thumbs up/down rating system with counts (green for upvote, red for downvote)
+  - Previous tracks section with light green background
 - `Item` model exists but no form to create items yet.
