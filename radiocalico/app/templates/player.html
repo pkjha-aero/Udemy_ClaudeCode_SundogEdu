@@ -12,91 +12,105 @@
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #f5f5f5;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #555;
+      color: #e8f5e9;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 48px;
+      height: 48px;
+      background: #e8f5e9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
     }
     .container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      max-width: 600px;
+      flex: 1;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
       width: 100%;
-      padding: 40px;
-    }
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-      font-size: 28px;
-      text-align: center;
-    }
-    .subtitle {
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 14px;
-      text-align: center;
-    }
-    .player-wrapper {
-      background: #f5f5f5;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    audio {
-      width: 100%;
-      cursor: pointer;
-      height: 40px;
     }
     .now-playing {
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-      border: 2px solid #667eea;
+      background: white;
       border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-      text-align: center;
+      padding: 40px;
+      margin-bottom: 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
     }
-    .now-playing h2 {
-      color: #667eea;
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 15px;
+    .album-cover {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
     }
-    .track-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #333;
-      margin-bottom: 5px;
+    .album-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .track-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
     .track-artist {
-      font-size: 16px;
-      color: #666;
-      margin-bottom: 3px;
+      font-size: 48px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+    .track-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
     }
     .track-album {
-      font-size: 13px;
-      color: #999;
-      margin-bottom: 15px;
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 24px;
     }
     .track-specs {
-      font-size: 11px;
-      color: #667eea;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      font-size: 14px;
+      color: #999;
+      font-style: italic;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .rating-label {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 12px;
     }
     .rating-section {
-      margin-top: 20px;
-      padding-top: 15px;
-      border-top: 1px solid #e0e0e0;
       display: flex;
-      justify-content: center;
-      gap: 25px;
+      gap: 16px;
       align-items: center;
+      margin-bottom: 24px;
     }
     .rating-button {
       background: none;
@@ -137,70 +151,86 @@
     .rating-button.active .rating-count {
       color: white;
     }
+    .player-wrapper {
+      background: #444;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .player-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-button:hover {
+      opacity: 0.8;
+    }
+    .player-time {
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 80px;
+    }
+    .player-volume {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .player-volume-icon {
+      color: white;
+      font-size: 18px;
+    }
+    .player-volume input {
+      width: 100px;
+      cursor: pointer;
+    }
     .recently-played {
-      margin-bottom: 30px;
+      background: #c8e6c9;
+      border-radius: 8px;
+      padding: 40px;
+      margin-top: 0;
     }
     .recently-played h2 {
-      color: #333;
-      font-size: 14px;
+      color: #000;
+      font-size: 20px;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #f0f0f0;
+      margin-bottom: 24px;
     }
     .track-item {
       padding: 12px 0;
-      border-bottom: 1px solid #f0f0f0;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      text-align: left;
+      flex-direction: column;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     }
     .track-item:last-child {
       border-bottom: none;
     }
-    .track-item-info {
-      flex: 1;
-    }
-    .track-item-number {
-      color: #ccc;
-      font-weight: 600;
-      margin-right: 12px;
-      min-width: 20px;
-    }
     .track-item-title {
       font-weight: 600;
-      color: #333;
+      color: #000;
       font-size: 14px;
       margin-bottom: 3px;
     }
     .track-item-artist {
-      color: #999;
+      color: #555;
       font-size: 13px;
+      font-style: italic;
     }
-    .info {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f9f9f9;
-      border-left: 4px solid #667eea;
-      border-radius: 4px;
-      text-align: left;
-      font-size: 12px;
-      color: #666;
+    audio {
+      display: none;
     }
-    .info dt {
-      font-weight: 600;
-      color: #333;
-      margin-top: 8px;
-    }
-    .info dd {
-      margin-left: 0;
-      margin-top: 2px;
-    }
-    .info dt:first-child {
-      margin-top: 0;
+    .loading {
+      color: #999;
+      font-style: italic;
     }
     a {
       color: #667eea;
@@ -209,56 +239,233 @@
     a:hover {
       text-decoration: underline;
     }
-    .loading {
-      color: #999;
-      font-style: italic;
+    @media (max-width: 768px) {
+      .now-playing {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 24px;
+      }
+      .track-artist {
+        font-size: 32px;
+      }
+      .album-cover {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="header">
+    <h1>
+      <div class="header-logo">🎙️</div>
+      Radio Calico
+    </h1>
+  </div>
+
   <div class="container">
-    <h1>🎙️ Radio Calico</h1>
-    <p class="subtitle">HLS Live Stream Player</p>
-
-    <div class="player-wrapper">
-      <audio id="audioPlayer" controls preload="auto">
-        Your browser does not support the audio element.
-      </audio>
-    </div>
-
     <div class="now-playing">
-      <h2>Now Playing</h2>
-      <div id="nowPlayingContent" class="loading">Loading...</div>
-      <div id="ratingSection" class="rating-section" style="display:none;">
-        <button class="rating-button" id="thumbsUpBtn" onclick="rateTrack(true)">
-          👍 <span class="rating-count" id="thumbsUpCount">0</span>
-        </button>
-        <button class="rating-button" id="thumbsDownBtn" onclick="rateTrack(false)">
-          👎 <span class="rating-count" id="thumbsDownCount">0</span>
-        </button>
+      <div class="album-cover">
+        <img id="albumArt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect fill='%23e0e0e0' width='400' height='400'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3EAlbum Art%3C/text%3E%3C/svg%3E" alt="Album cover">
+      </div>
+      <div class="track-info">
+        <div class="track-artist" id="trackArtist">Loading...</div>
+        <div class="track-title" id="trackTitle"></div>
+        <div class="track-album" id="trackAlbum"></div>
+        <div class="track-specs" id="trackSpecs"></div>
+
+        <div class="rating-label">Rate this track:</div>
+        <div class="rating-section" id="ratingSection" style="display:none;">
+          <button class="rating-button" id="thumbsUpBtn" onclick="rateTrack(true)">
+            👍 <span class="rating-count" id="thumbsUpCount">0</span>
+          </button>
+          <button class="rating-button" id="thumbsDownBtn" onclick="rateTrack(false)">
+            👎 <span class="rating-count" id="thumbsDownCount">0</span>
+          </button>
+        </div>
+
+        <div class="player-wrapper">
+          <button class="player-button" id="playBtn" onclick="togglePlay()">▶️</button>
+          <div class="player-time"><span id="currentTime">0:00</span> / Live</div>
+          <div class="player-volume">
+            <span class="player-volume-icon">🔊</span>
+            <input type="range" min="0" max="100" value="70" id="volumeControl" onchange="setVolume(this.value)">
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="recently-played">
-      <h2>Recently Played</h2>
+      <h2>Previous tracks:</h2>
       <div id="recentlyPlayedContent" class="loading">Loading...</div>
     </div>
-
-    <div class="info">
-      <dl>
-        <dt>Stream URL:</dt>
-        <dd><code>https://d3d4yli4hf5...</code></dd>
-        <dt>Format:</dt>
-        <dd>HLS (HTTP Live Streaming) - Lossless</dd>
-        <dt>Browser Support:</dt>
-        <dd>Chrome, Firefox, Safari, Edge (iOS 10+, Android 6+)</dd>
-      </dl>
-    </div>
-
-    <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">
-      <a href="/">← Back to Home</a>
-    </p>
   </div>
+
+  <audio id="audioPlayer" preload="auto"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <script>
+    const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
+    const METADATA_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json';
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const currentTimeDisplay = document.getElementById('currentTime');
+    const volumeControl = document.getElementById('volumeControl');
+    const trackArtist = document.getElementById('trackArtist');
+    const trackTitle = document.getElementById('trackTitle');
+    const trackAlbum = document.getElementById('trackAlbum');
+    const trackSpecs = document.getElementById('trackSpecs');
+    const recentlyPlayedContent = document.getElementById('recentlyPlayedContent');
+    const ratingSection = document.getElementById('ratingSection');
+    const thumbsUpBtn = document.getElementById('thumbsUpBtn');
+    const thumbsDownBtn = document.getElementById('thumbsDownBtn');
+    const thumbsUpCount = document.getElementById('thumbsUpCount');
+    const thumbsDownCount = document.getElementById('thumbsDownCount');
+
+    let currentSongId = null;
+    let isPlaying = false;
+
+    function togglePlay() {
+      if (isPlaying) {
+        audio.pause();
+        playBtn.textContent = '▶️';
+      } else {
+        audio.play();
+        playBtn.textContent = '⏸️';
+      }
+      isPlaying = !isPlaying;
+    }
+
+    function setVolume(value) {
+      audio.volume = value / 100;
+    }
+
+    function updateTimeDisplay() {
+      if (audio.currentTime) {
+        const minutes = Math.floor(audio.currentTime / 60);
+        const seconds = Math.floor(audio.currentTime % 60);
+        currentTimeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }
+
+    function initStream() {
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          autoStartLoad: true,
+          debug: false,
+          fragLoadingTimeOut: 20000,
+          manifestLoadingTimeOut: 10000,
+          levelLoadingTimeOut: 10000,
+        });
+
+        hls.loadSource(STREAM_URL);
+        hls.attachMedia(audio);
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.error('HLS fatal error:', data.type);
+            hls.destroy();
+          }
+        });
+      } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+        audio.src = STREAM_URL;
+      }
+    }
+
+    function formatMetadata(data) {
+      trackArtist.textContent = data.artist;
+      trackTitle.textContent = data.title + ' (' + data.date + ')';
+      trackAlbum.textContent = data.album;
+      trackSpecs.innerHTML = `Source quality: ${data.bit_depth}-bit ${data.sample_rate / 1000}kHz<br>Stream quality: 48kHz FLAC / HLS Lossless`;
+
+      fetchSongRatings(data.title, data.artist, data.album, data.date);
+
+      const recentTracks = [];
+      for (let i = 1; i <= 5; i++) {
+        const artistKey = `prev_artist_${i}`;
+        const titleKey = `prev_title_${i}`;
+        if (data[artistKey] && data[titleKey]) {
+          recentTracks.push(`
+            <div class="track-item">
+              <div class="track-item-title">${data[artistKey]}: ${data[titleKey]}</div>
+            </div>
+          `);
+        }
+      }
+      recentlyPlayedContent.innerHTML = recentTracks.join('');
+    }
+
+    function fetchSongRatings(title, artist, album, date) {
+      const params = new URLSearchParams({
+        title: title,
+        artist: artist,
+        album: album,
+        date: date
+      });
+
+      fetch(`/api/song/current?${params}`)
+        .then(response => response.json())
+        .then(data => {
+          currentSongId = data.id;
+          thumbsUpCount.textContent = data.thumbs_up;
+          thumbsDownCount.textContent = data.thumbs_down;
+          ratingSection.style.display = 'flex';
+
+          thumbsUpBtn.classList.remove('active');
+          thumbsDownBtn.classList.remove('active');
+
+          if (data.user_rating === 'up') {
+            thumbsUpBtn.classList.add('active');
+          } else if (data.user_rating === 'down') {
+            thumbsDownBtn.classList.add('active');
+          }
+        })
+        .catch(error => console.error('Error fetching song ratings:', error));
+    }
+
+    function rateTrack(isThumbsUp) {
+      if (!currentSongId) return;
+
+      fetch('/api/song/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          song_id: currentSongId,
+          is_thumbs_up: isThumbsUp
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          thumbsUpCount.textContent = data.thumbs_up;
+          thumbsDownCount.textContent = data.thumbs_down;
+          thumbsUpBtn.classList.toggle('active', data.user_rating === 'up');
+          thumbsDownBtn.classList.toggle('active', data.user_rating === 'down');
+        })
+        .catch(error => console.error('Error submitting rating:', error));
+    }
+
+    function fetchMetadata() {
+      fetch(METADATA_URL)
+        .then(response => response.json())
+        .then(data => formatMetadata(data))
+        .catch(error => {
+          console.error('Error fetching metadata:', error);
+          trackArtist.textContent = 'Unable to load';
+          recentlyPlayedContent.innerHTML = '<div class="loading">Unable to load metadata</div>';
+        });
+    }
+
+    audio.addEventListener('timeupdate', updateTimeDisplay);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initStream();
+      fetchMetadata();
+      setInterval(fetchMetadata, 10000);
+      volumeControl.value = 70;
+      setVolume(70);
+    });
+  </script>
+</body>
+</html>
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
   <script>
