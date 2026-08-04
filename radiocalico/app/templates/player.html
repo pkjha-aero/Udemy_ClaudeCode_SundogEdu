@@ -377,6 +377,14 @@
       trackAlbum.textContent = data.album;
       trackSpecs.innerHTML = `Source quality: ${data.bit_depth}-bit ${data.sample_rate / 1000}kHz<br>Stream quality: 48kHz FLAC / HLS Lossless`;
 
+      if (data.image || data.albumArt || data.picture || data.artwork || data.cover) {
+        const albumArtImg = document.getElementById('albumArt');
+        albumArtImg.src = data.image || data.albumArt || data.picture || data.artwork || data.cover;
+        albumArtImg.onerror = function() {
+          this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect fill='%23e0e0e0' width='400' height='400'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3EAlbum Art%3C/text%3E%3C/svg%3E";
+        };
+      }
+
       fetchSongRatings(data.title, data.artist, data.album, data.date);
 
       const recentTracks = [];
