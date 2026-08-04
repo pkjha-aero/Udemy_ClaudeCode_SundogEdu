@@ -55,15 +55,25 @@ Server: http://127.0.0.1:5000
 - The repo lives on an NTFS-mounted drive (`/media/.../Win_D/...`). Executable bits on files created inside `venv/bin/` (e.g. `pip`) aren't reliably set, so `./venv/bin/pip` may fail with "Permission denied". Use `./venv/bin/python -m pip ...` instead — it always works.
 - The actual git repository root is **one directory above** `radiocalico/` (i.e. `Udemy_ClaudeCode_SundogEdu/`), not `radiocalico/` itself. Run git commands from there, or be aware `git status`/`git log` at the repo root will show `radiocalico/` as a subpath.
 
+## Brand & Styling
+
+Site implements Radio Calico brand style guide with:
+- **Color Palette**: Mint (#D8F2D5), Forest Green (#1F4E23), Teal (#38A29D), Calico Orange (#EFA63C), Charcoal (#231F20), Cream (#F5EADA), White (#FFFFFF)
+- **Typography**: Montserrat (headings) and Open Sans (body) from Google Fonts
+- **Logo**: Official RadioCalicoLogoTM.png in `app/static/` (56px display size)
+- **Layout**: Max-width 1200px, 64px vertical rhythm, 24px horizontal gutters
+- **Components**: Primary buttons (Forest Green), secondary buttons (border-based), teal focus states on forms
+
 ## Current state
 
-- Homepage at `/` lists all users, has an add-user form (with duplicate email validation), lists items, and links to the radio player.
+- Homepage at `/` features hero section with "Listen Now" CTA, lists users, add-user form (with duplicate email validation), and items list. Full brand styling applied.
 - A default user (Pankaj Jha, pankaj.psu@gmail.com) is seeded on first run.
-- Radio player at `/player` streams lossless audio via HLS.js with redesigned layout matching RadioCalicoLayout.png mockup.
-  - Full-width dark header with logo and title
-  - Two-column layout with album art and track information
-  - Custom player controls with time and volume adjustment
+- Radio player at `/player` streams lossless audio via HLS.js with:
+  - Full-width teal header with official logo
+  - Two-column layout with album art (left) and track info (right)
+  - Track details: artist (Forest Green), title, album, quality specs
+  - Custom player controls on teal background
   - Dynamic album art from metadata
-  - Thumbs up/down rating system with counts (green for upvote, red for downvote)
-  - Previous tracks section with light green background
+  - Thumbs up/down rating system (Forest Green upvote, Orange downvote) with counts
+  - Previous tracks section with Mint background
 - `Item` model exists but no form to create items yet.
