@@ -13,7 +13,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 def read_project_files() -> str:
     """Read relevant project files for documentation context."""
     content = []
-    base_path = Path("radiocalico")
+    base_path = Path(".")
 
     files_to_read = [
         "CLAUDE.md",
@@ -75,7 +75,7 @@ Generate:
 
 def save_documentation(docs: str):
     """Save generated documentation to file."""
-    docs_dir = Path("radiocalico/docs")
+    docs_dir = Path("docs")
     docs_dir.mkdir(exist_ok=True)
 
     output_file = docs_dir / "API.md"

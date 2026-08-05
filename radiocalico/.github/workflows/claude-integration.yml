@@ -64,7 +64,7 @@ jobs:
         run: |
           git config user.name "Claude Documentation Bot"
           git config user.email "claude-bot@example.com"
-          git add radiocalico/docs/ radiocalico/README.md radiocalico/CLAUDE.md 2>/dev/null || true
+          git add docs/ README.md CLAUDE.md 2>/dev/null || true
           git commit -m "docs: auto-generated documentation updates" --allow-empty
           git push
 
