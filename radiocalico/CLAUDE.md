@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Local prototype website. Flask + SQLite, native install (no Docker) in a Python virtualenv.
 
+## Style Guide
+- A text version of the styling guide for the webpage is at `radioCalico_Style_Guide.txt`
+- The Radio Calico logo is at `RadioCalicoLogoTM.png`
+
 ## Stack
 
 - **Webserver**: Flask (app factory pattern in `app/__init__.py`)
