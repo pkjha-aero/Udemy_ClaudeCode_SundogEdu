@@ -3,6 +3,7 @@ import secrets
 
 from app import db
 from app.models import Item, User, Song, Rating
+from app.template_helpers import prepare_index_context
 
 bp = Blueprint("main", __name__)
 
@@ -11,7 +12,8 @@ bp = Blueprint("main", __name__)
 def index():
     items = Item.query.all()
     users = User.query.all()
-    return render_template("index.html", items=items, users=users)
+    context = prepare_index_context(items, users)
+    return render_template("index.html", **context)
 
 
 @bp.route("/player")

@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Radio Calico - Ad-Free Lossless Music Streaming</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+  <link rel="stylesheet" href="{{ css_url }}">
 </head>
 <body>
   <div class="header">
     <h1>
       <div class="header-logo">
-        <img src="{{ url_for('static', filename='radiocalico_logo.png') }}" alt="Radio Calico Logo">
+        <img src="{{ logo_url }}" alt="Radio Calico Logo">
       </div>
       Radio Calico
     </h1>
@@ -21,7 +21,7 @@
     <div class="hero">
       <h2>Lossless Music Streaming at Its Finest</h2>
       <p>Experience crystal-clear audio with our ad-free, subscription-free radio service. 24-bit, 48kHz streaming delivered directly to your ears.</p>
-      <a href="{{ url_for('main.player') }}" class="cta-button">▶ Open Player</a>
+      <a href="{{ player_url }}" class="cta-button">▶ Open Player</a>
     </div>
 
     <div class="section">
@@ -37,7 +37,7 @@
       </div>
 
       <div class="form-container">
-        <form action="{{ url_for('main.add_user') }}" method="post">
+        <form action="{{ add_user_url }}" method="post">
           <div class="form-group">
             <label for="name">Name:</label>
             <input type="text" id="name" name="name" required>
@@ -66,7 +66,7 @@
   </div>
 
   <div class="footer">
-    <p>© 2025 Radio Calico. Enjoy the music. | <a href="{{ url_for('main.player') }}">Player</a></p>
+    <p>© 2025 Radio Calico. Enjoy the music. | <a href="{{ player_url }}">Player</a></p>
   </div>
 </body>
 </html>
