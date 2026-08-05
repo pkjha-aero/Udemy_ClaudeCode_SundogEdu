@@ -35,8 +35,10 @@ Server: http://127.0.0.1:5000
 **App structure (app factory pattern):**
 - `app/__init__.py` — factory function `create_app()`, DB init, seeds default User on startup
 - `app/models.py` — four ORM models: `User`, `Item`, `Song`, `Rating` (see Models section below)
-- `app/routes.py` — Flask Blueprint with HTML routes and JSON API endpoints
-- `app/templates/` — Jinja2 templates for HTML pages
+- `app/routes.py` — Flask Blueprint with HTML routes and JSON API endpoints; uses `template_helpers.py` to prepare context data
+- `app/template_helpers.py` — context preparation functions that compute URLs and format data for templates (separates Python logic from template layer)
+- `app/templates/` — Jinja2 templates for HTML pages; templates receive pre-computed context from helpers
+- `app/static/` — CSS and image assets; `index.css` contains all homepage styling
 
 **Models:**
 - `User` — name, email (unique); seeded default: Pankaj Jha (pankaj.psu@gmail.com)
@@ -45,6 +47,8 @@ Server: http://127.0.0.1:5000
 - `Rating` — song_id, session_id, is_thumbs_up (one rating per song per session, enforced by unique constraint)
 
 **Session management:** Flask session stores `session_id` (per-browser); used to track one rating per song per unique visitor. No database cleanup needed—stale ratings accumulate but don't affect queries (filtered by current session_id).
+
+**Template layer:** Context data (URLs, formatted lists, etc.) is prepared in Python helper functions (`template_helpers.py`) before passing to Jinja2 templates. This keeps template files focused on display logic rather than mixing Python/Jinja2 logic with HTML. Templates receive pre-computed URLs instead of calling `url_for()` in markup.
 
 **Routes:**
 - GET `/` → homepage (lists users, items, add-user form)
