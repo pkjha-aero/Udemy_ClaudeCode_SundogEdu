@@ -391,6 +391,18 @@
       }
     }
 
+    function getDefaultStreamQuality() {
+      if (navigator.connection && navigator.connection.effectiveType) {
+        const connectionType = navigator.connection.effectiveType;
+        if (connectionType === '4g' || connectionType === '5g') {
+          return '48 kHz FLAC/HLS Lossless';
+        } else if (connectionType === '3g') {
+          return '192 kbps VBR mp3';
+        }
+      }
+      return '48 kHz FLAC/HLS Lossless';
+    }
+
     function hashStringToColor(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -405,7 +417,8 @@
       trackArtist.textContent = data.artist;
       trackTitle.textContent = data.title + ' (' + data.date + ')';
       trackAlbum.textContent = data.album;
-      trackSpecs.innerHTML = `Source quality: ${data.bit_depth}-bit ${data.sample_rate / 1000}kHz<br>Stream quality: 48kHz FLAC / HLS Lossless`;
+      const streamQuality = data.stream_quality || getDefaultStreamQuality();
+      trackSpecs.innerHTML = `Source quality: ${data.bit_depth}-bit ${data.sample_rate / 1000}kHz<br>Stream quality: ${streamQuality}`;
 
       const color1 = hashStringToColor(data.artist);
       const color2 = hashStringToColor(data.album);
@@ -512,145 +525,6 @@
       setInterval(fetchMetadata, 10000);
       volumeControl.value = 70;
       setVolume(70);
-    });
-  </script>
-</body>
-</html>
-
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-  <script>
-    const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
-    const METADATA_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json';
-    const audio = document.getElementById('audioPlayer');
-    const nowPlayingContent = document.getElementById('nowPlayingContent');
-    const recentlyPlayedContent = document.getElementById('recentlyPlayedContent');
-    const ratingSection = document.getElementById('ratingSection');
-    const thumbsUpBtn = document.getElementById('thumbsUpBtn');
-    const thumbsDownBtn = document.getElementById('thumbsDownBtn');
-    const thumbsUpCount = document.getElementById('thumbsUpCount');
-    const thumbsDownCount = document.getElementById('thumbsDownCount');
-
-    let currentSongId = null;
-
-    function initStream() {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          autoStartLoad: true,
-          debug: false,
-          fragLoadingTimeOut: 20000,
-          manifestLoadingTimeOut: 10000,
-          levelLoadingTimeOut: 10000,
-        });
-
-        hls.loadSource(STREAM_URL);
-        hls.attachMedia(audio);
-
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            console.error('HLS fatal error:', data.type);
-            hls.destroy();
-          }
-        });
-      } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-        audio.src = STREAM_URL;
-      }
-    }
-
-    function formatMetadata(data) {
-      const nowPlaying = `
-        <div class="track-title">${data.title}</div>
-        <div class="track-artist">${data.artist}</div>
-        <div class="track-album">${data.album} (${data.date})</div>
-        <div class="track-specs">${data.bit_depth}-bit • ${data.sample_rate / 1000}kHz</div>
-      `;
-      nowPlayingContent.innerHTML = nowPlaying;
-
-      fetchSongRatings(data.title, data.artist, data.album, data.date);
-
-      const recentTracks = [];
-      for (let i = 1; i <= 5; i++) {
-        const artistKey = `prev_artist_${i}`;
-        const titleKey = `prev_title_${i}`;
-        if (data[artistKey] && data[titleKey]) {
-          recentTracks.push(`
-            <div class="track-item">
-              <span class="track-item-number">${i}</span>
-              <div class="track-item-info">
-                <div class="track-item-title">${data[titleKey]}</div>
-                <div class="track-item-artist">${data[artistKey]}</div>
-              </div>
-            </div>
-          `);
-        }
-      }
-      recentlyPlayedContent.innerHTML = recentTracks.join('');
-    }
-
-    function fetchSongRatings(title, artist, album, date) {
-      const params = new URLSearchParams({
-        title: title,
-        artist: artist,
-        album: album,
-        date: date
-      });
-
-      fetch(`/api/song/current?${params}`)
-        .then(response => response.json())
-        .then(data => {
-          currentSongId = data.id;
-          thumbsUpCount.textContent = data.thumbs_up;
-          thumbsDownCount.textContent = data.thumbs_down;
-          ratingSection.style.display = 'flex';
-
-          thumbsUpBtn.classList.remove('active');
-          thumbsDownBtn.classList.remove('active');
-
-          if (data.user_rating === 'up') {
-            thumbsUpBtn.classList.add('active');
-          } else if (data.user_rating === 'down') {
-            thumbsDownBtn.classList.add('active');
-          }
-        })
-        .catch(error => console.error('Error fetching song ratings:', error));
-    }
-
-    function rateTrack(isThumbsUp) {
-      if (!currentSongId) return;
-
-      fetch('/api/song/rate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          song_id: currentSongId,
-          is_thumbs_up: isThumbsUp
-        })
-      })
-        .then(response => response.json())
-        .then(data => {
-          thumbsUpCount.textContent = data.thumbs_up;
-          thumbsDownCount.textContent = data.thumbs_down;
-
-          thumbsUpBtn.classList.toggle('active', data.user_rating === 'up');
-          thumbsDownBtn.classList.toggle('active', data.user_rating === 'down');
-        })
-        .catch(error => console.error('Error submitting rating:', error));
-    }
-
-    function fetchMetadata() {
-      fetch(METADATA_URL)
-        .then(response => response.json())
-        .then(data => formatMetadata(data))
-        .catch(error => {
-          console.error('Error fetching metadata:', error);
-          nowPlayingContent.innerHTML = '<div class="loading">Unable to load metadata</div>';
-          recentlyPlayedContent.innerHTML = '<div class="loading">Unable to load metadata</div>';
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      initStream();
-      fetchMetadata();
-      setInterval(fetchMetadata, 10000);
     });
   </script>
 </body>
