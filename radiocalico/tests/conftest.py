@@ -71,9 +71,7 @@ def sample_song(db_session):
         title="Test Song",
         artist="Test Artist",
         album="Test Album",
-        date="2026-08-06",
-        bit_depth=24,
-        sample_rate=48000
+        date="2026-08-06"
     )
     db_session.add(song)
     db_session.commit()

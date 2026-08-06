@@ -30,7 +30,7 @@ class TestRatingUniquenessConstraint:
 
         assert len(sample_song.ratings) == 2
 
-    def test_rating_same_session_different_songs_allowed(self, db_session, db_session, sample_song):
+    def test_rating_same_session_different_songs_allowed(self, db_session, sample_song):
         """Test that same session can rate different songs."""
         song2 = Song(title="Song2", artist="Artist2")
         db_session.add(song2)
@@ -90,7 +90,8 @@ class TestVoteCountingEdgeCases:
     def test_only_thumbs_up(self, db_session, sample_song):
         """Test counting with only up votes."""
         for i in range(5):
-            Rating(song_id=sample_song.id, session_id=f"s{i}", is_thumbs_up=True)
+            rating = Rating(song_id=sample_song.id, session_id=f"s{i}", is_thumbs_up=True)
+            db_session.add(rating)
         db_session.commit()
 
         song_dict = sample_song.to_dict()
@@ -100,7 +101,8 @@ class TestVoteCountingEdgeCases:
     def test_only_thumbs_down(self, db_session, sample_song):
         """Test counting with only down votes."""
         for i in range(5):
-            Rating(song_id=sample_song.id, session_id=f"s{i}", is_thumbs_up=False)
+            rating = Rating(song_id=sample_song.id, session_id=f"s{i}", is_thumbs_up=False)
+            db_session.add(rating)
         db_session.commit()
 
         song_dict = sample_song.to_dict()
@@ -110,9 +112,11 @@ class TestVoteCountingEdgeCases:
     def test_mixed_ratings_counts_correct(self, db_session, sample_song):
         """Test counting with mixed votes (7 up, 3 down)."""
         for i in range(7):
-            Rating(song_id=sample_song.id, session_id=f"up{i}", is_thumbs_up=True)
+            rating = Rating(song_id=sample_song.id, session_id=f"up{i}", is_thumbs_up=True)
+            db_session.add(rating)
         for i in range(3):
-            Rating(song_id=sample_song.id, session_id=f"down{i}", is_thumbs_up=False)
+            rating = Rating(song_id=sample_song.id, session_id=f"down{i}", is_thumbs_up=False)
+            db_session.add(rating)
         db_session.commit()
 
         song_dict = sample_song.to_dict()
@@ -190,7 +194,7 @@ class TestRatingBehavior:
         ).first()
         assert found is None
 
-    def test_multiple_ratings_per_user_different_songs(self, db_session, db_session):
+    def test_multiple_ratings_per_user_different_songs(self, db_session):
         """Test that one user can rate multiple different songs."""
         from app.models import Song
         song1 = Song(title="Song1", artist="Artist1")
