@@ -1,0 +1,57 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r radiocalico/requirements-dev.txt
+
+      - name: Run pytest with coverage
+        run: |
+          cd radiocalico
+          pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=88
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./radiocalico/htmlcov/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('./radiocalico/.coverage', 'utf8') || 'Coverage report generated';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Unit tests passed! Coverage report available in Actions artifacts.'
+            })
+        continue-on-error: true
