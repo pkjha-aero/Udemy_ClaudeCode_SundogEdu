@@ -92,8 +92,61 @@ Site implements Radio Calico brand style guide:
 - NTFS-mounted repo: executable bits on files in `venv/bin/` aren't reliable. `./venv/bin/pip` may fail with "Permission denied". Use `./venv/bin/python -m pip ...` instead (always works).
 - Git repository root is **one directory above** `radiocalico/` (i.e. `Udemy_ClaudeCode_SundogEdu/`). Run git commands from there, not from `radiocalico/`; `git status` at the repo root will show `radiocalico/` as a subpath.
 
+## Testing
+
+**Test Framework:** pytest + pytest-flask + pytest-cov (in-memory SQLite for isolation)
+
+**Setup:**
+```bash
+pip install -r requirements-dev.txt
+```
+
+**Run all tests with coverage:**
+```bash
+pytest --cov=app --cov-report=html --cov-report=term-missing
+```
+
+**Run specific test file:**
+```bash
+pytest tests/test_models.py -v
+pytest tests/test_api.py -v
+pytest tests/test_ratings_system.py -v
+```
+
+**View coverage report:**
+```bash
+pytest --cov=app --cov-report=html
+# Open: htmlcov/index.html
+```
+
+**Test Structure (8 phases, 120+ test cases):**
+- Phase 1: Infrastructure (conftest.py fixtures)
+- Phase 2: Model tests (User, Item, Song, Rating CRUD, uniqueness)
+- Phase 3: Template helper tests (prepare_index_context)
+- Phase 4: Route & API tests (/, /player, /users, /api/*)
+- Phase 5: Integration tests (full player workflows, session persistence)
+- Phase 6: Ratings system tests (unique constraints, vote counting, updates)
+- Phase 7: Edge cases (validation, error handling, XSS, concurrency)
+- Phase 8: Session management (ID generation, isolation, persistence)
+
+**Coverage Target:** 88% overall (95% models, 90% routes/API, 100% helpers, 85% integration)
+
+**Test Files:**
+- `tests/conftest.py` — shared fixtures (app, client, db_session, sample fixtures)
+- `tests/test_models.py` — model CRUD and constraints (35 tests)
+- `tests/test_template_helpers.py` — context preparation (11 tests)
+- `tests/test_routes.py` — HTML route handlers (12 tests)
+- `tests/test_api.py` — JSON API endpoints (42 tests)
+- `tests/test_integration.py` — full workflows (15 tests)
+- `tests/test_ratings_system.py` — ratings constraints (20 tests)
+- `tests/test_edge_cases.py` — error handling (20 tests)
+- `tests/test_session_management.py` — session isolation (15 tests)
+
+**CI/CD:** `.github/workflows/tests.yml` runs pytest on push/PR with 88% coverage gate.
+
 ## Current state
 
 - Homepage features hero section with "Listen Now" CTA, user list + add-user form (duplicate email validation), items list, link to player. Full brand styling applied.
 - Radio player at `/player` streams lossless HLS with teal header/logo, two-column layout, dynamic album art, track info, and session-based song ratings (thumbs up/down with aggregate counts).
 - `Item` model exists but no form to create items yet.
+- Unit testing infrastructure in place: 120+ test cases across 8 phases covering models, routes, API, integration, ratings system, edge cases, and session management.
