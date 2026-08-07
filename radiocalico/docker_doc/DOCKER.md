@@ -297,18 +297,30 @@ sudo certbot certonly --standalone -d yourdomain.com
 
 ## Health Checks
 
-Production containers include health checks:
+Production containers include automated health checks (defined in Dockerfile):
+
+**Health Check Implementation:**
+- Uses Python's built-in `urllib` (no external dependencies)
+- Checks `/api/health` endpoint every 30 seconds
+- Container shows "Up (healthy)" or "Up (unhealthy)" status
+
+**View container health:**
 
 ```bash
-# Check container health
+# Quick status check
 docker ps
 
-# Detailed health info
-docker inspect radiocalico
+# Detailed health info with history
+docker inspect radiocalico-prod --format='{{json .State.Health}}'
 
-# Manual health check
+# Manual health check (curl also works)
 curl http://localhost:5000/api/health
 # Response: {"status": "ok"}
+```
+
+**Expected output when healthy:**
+```
+radiocalico-prod    Up (healthy)   0.0.0.0:5000->5000/tcp
 ```
 
 ## Logs and Monitoring
