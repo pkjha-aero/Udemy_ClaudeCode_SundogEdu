@@ -56,7 +56,7 @@ jobs:
 
           # Call Claude API
           message = client.messages.create(
-              model="claude-opus-4-1-20250805",
+              model="claude-opus-5",
               max_tokens=1024,
               system="""You are a helpful GitHub assistant. Respond concisely to questions and issues.
               Keep responses under 500 characters when possible. Be professional and helpful.""",

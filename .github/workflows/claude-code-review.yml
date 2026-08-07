@@ -101,7 +101,7 @@ jobs:
 
           # Call Claude API
           message = client.messages.create(
-              model="claude-opus-4-1-20250805",
+              model="claude-opus-5",
               max_tokens=1000,
               system="""You are an expert code reviewer. Provide constructive, actionable feedback.
               Focus on important issues, not minor style preferences.
