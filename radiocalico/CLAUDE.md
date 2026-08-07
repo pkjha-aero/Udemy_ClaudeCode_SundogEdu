@@ -28,7 +28,19 @@ python3 -m venv venv
 ```bash
 ./venv/bin/python run.py
 ```
-Server: http://127.0.0.1:5000
+Accessible at: http://127.0.0.1:5000 or http://localhost:5000
+
+**Or run in Docker** (with hot reload):
+```bash
+docker-compose up
+```
+Accessible at: http://127.0.0.1:5000 or http://localhost:5000
+
+**Production mode in Docker** (with Nginx on port 80):
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+Accessible at: http://127.0.0.1 or http://localhost
 
 ## Architecture
 
@@ -60,7 +72,7 @@ Server: http://127.0.0.1:5000
 
 ## Radio Player
 
-- **Route**: `/player` → http://127.0.0.1:5000/player
+- **Route**: `/player` → http://127.0.0.1:5000/player (non-Docker) or http://localhost:5000/player (Docker dev) or http://localhost/player (Docker prod)
 - **Stream**: Lossless HLS from CloudFront CDN (m3u8 URL in `stream_URL.txt`)
 - **Library**: HLS.js (from CDN) for cross-browser playback; falls back to native HLS on Safari/iOS
 - **Layout**: Full-width teal header with logo, two-column layout (album art left, track info right)
