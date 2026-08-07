@@ -71,7 +71,11 @@ docker build --target=dev -t radiocalico:dev .
 docker run -it -p 5000:5000 -v $(pwd):/app radiocalico:dev
 ```
 
-**Access**: http://localhost:5000
+**Access**: 
+- **http://localhost:5000** ← Recommended
+- **http://127.0.0.1:5000** ← Also works (same as localhost)
+
+Both URLs are equivalent on your local machine. Use whichever you prefer.
 
 **Features**:
 - Flask debug mode enabled
@@ -90,12 +94,14 @@ docker-compose -f docker-compose.prod.yml up -d
 
 # Option 3: Building first, then running
 docker build --target=prod -t radiocalico:prod .
-docker run -d -p 5000:5000 radiocalico:prod
+docker run -d -p 80:80 radiocalico:prod
 ```
 
 **Access**: 
-- HTTP: http://localhost (redirects to HTTPS)
-- HTTPS: https://localhost (requires SSL cert setup)
+- **http://localhost** ← Recommended
+- **http://127.0.0.1** ← Also works (same as localhost)
+
+Both URLs are equivalent on your local machine. Nginx serves on port 80 (HTTP only in this setup).
 
 **Features**:
 - Gunicorn with 4 workers
@@ -106,6 +112,27 @@ docker run -d -p 5000:5000 radiocalico:prod
 - Gzip compression
 - Rate limiting
 - Security headers
+
+## Localhost vs 127.0.0.1 - No Conflict
+
+Both `localhost` and `127.0.0.1` work interchangeably on your local machine. They refer to the same address (loopback interface). You can freely use either one.
+
+### URL Compatibility Across Deployments
+
+| Deployment | Port | URLs that work |
+|---|---|---|
+| **Non-Docker** (native Flask) | 5000 | `http://localhost:5000` and `http://127.0.0.1:5000` |
+| **Docker Dev** (docker-compose up) | 5000 | `http://localhost:5000` and `http://127.0.0.1:5000` |
+| **Docker Prod** (docker-compose -f docker-compose.prod.yml up) | 80 | `http://localhost` and `http://127.0.0.1` |
+
+**Key Point**: The Flask app binds to `0.0.0.0`, which means it listens on all interfaces including both `127.0.0.1` and `localhost`. You can switch between the three deployment modes without changing your URL preferences.
+
+**Example**: If you prefer using `127.0.0.1:5000`, you can:
+1. Run non-Docker: `python run.py` → access at `http://127.0.0.1:5000`
+2. Run Docker dev: `docker-compose up` → access at `http://127.0.0.1:5000` (also works)
+3. Switch back to non-Docker anytime → access at `http://127.0.0.1:5000`
+
+No port conflicts, no state issues. Each mode has its own containers/processes.
 
 ## Building Images
 
@@ -220,10 +247,9 @@ docker rm radiocalico
 
 ### Ports
 
-- **Development**: 5000 (direct Flask)
+- **Development**: 5000 (direct Flask, accessible as http://localhost:5000 or http://127.0.0.1:5000)
 - **Production**: 
-  - 80 (HTTP, redirects to 443)
-  - 443 (HTTPS)
+  - 80 (HTTP, accessible as http://localhost or http://127.0.0.1)
   - 5000 (internal Flask, not exposed)
 
 ### Volumes
@@ -236,9 +262,11 @@ docker rm radiocalico
 **Production**:
 - `radiocalico-data:/app/instance` - Persist database
 
-### SSL/TLS (Production)
+### SSL/TLS (Production - Optional)
 
-To enable HTTPS with self-signed certificates:
+The current setup runs Nginx on HTTP (port 80). For production with HTTPS:
+
+**Option 1: Self-signed certificates (testing)**
 
 ```bash
 # Generate self-signed cert (valid for 365 days)
@@ -246,10 +274,12 @@ mkdir -p ssl
 openssl req -x509 -newkey rsa:4096 -nodes \
   -out ssl/cert.pem -keyout ssl/key.pem -days 365
 
-# The nginx.conf will use these certificates
+# Uncomment HTTPS block in nginx.conf
+# Add port 443 to docker-compose.prod.yml ports section
+# Restart containers: docker-compose -f docker-compose.prod.yml up -d
 ```
 
-For production, use Let's Encrypt with Certbot:
+**Option 2: Let's Encrypt (recommended for production)**
 
 ```bash
 # Install certbot
@@ -258,8 +288,12 @@ sudo apt-get install certbot python3-certbot-nginx
 # Get certificate
 sudo certbot certonly --standalone -d yourdomain.com
 
-# Update nginx.conf to point to /etc/letsencrypt/live/yourdomain.com/
+# Mount certs in docker-compose.prod.yml:
+# volumes:
+#   - /etc/letsencrypt/live/yourdomain.com:/etc/nginx/ssl:ro
 ```
+
+**For this demo setup**, HTTP-only is fine. Upgrade to HTTPS when deploying to production.
 
 ## Health Checks
 
