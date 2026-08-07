@@ -34,8 +34,7 @@ services:
       - FLASK_DEBUG=0
       - DATABASE_URL=postgresql://radiocalico:${DB_PASSWORD:-radiocalico}@postgres:5432/radiocalico
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     networks:
       - radiocalico-network
 

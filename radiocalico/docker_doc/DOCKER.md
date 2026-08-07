@@ -324,12 +324,12 @@ sudo certbot certonly --standalone -d yourdomain.com
 
 ## Health Checks
 
-Production containers include automated health checks (defined in Dockerfile):
+Production containers include automated health checks:
 
 **Health Check Implementation:**
-- Uses Python's built-in `urllib` (no external dependencies)
-- Checks `/api/health` endpoint every 30 seconds
-- Container shows "Up (healthy)" or "Up (unhealthy)" status
+- **Flask App**: Uses Python's built-in `urllib`, checks `/api/health` endpoint every 30 seconds
+- **PostgreSQL**: Uses `pg_isready` command every 10 seconds
+- Containers show "Up (healthy)" or "Up (unhealthy)" status
 
 **View container health:**
 
@@ -339,15 +339,25 @@ docker ps
 
 # Detailed health info with history
 docker inspect radiocalico-prod --format='{{json .State.Health}}'
-
-# Manual health check (curl also works)
-curl http://localhost:5000/api/health
-# Response: {"status": "ok"}
 ```
+
+**Health Check Endpoints:**
+
+Access these links to verify services are running (requires services to be started):
+
+- **Flask API Health** (internal): [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Nginx Proxy Health**: [http://localhost/api/health](http://localhost/api/health)
+- **Curl command**:
+  ```bash
+  curl http://localhost/api/health
+  # Response: {"status":"ok"}
+  ```
 
 **Expected output when healthy:**
 ```
-radiocalico-prod    Up (healthy)   0.0.0.0:5000->5000/tcp
+radiocalico-nginx      Up (healthy)   0.0.0.0:80->80/tcp
+radiocalico-prod       Up (healthy)   0.0.0.0:5000->5000/tcp
+radiocalico-postgres   Up (healthy)   5432/tcp
 ```
 
 ## Logs and Monitoring

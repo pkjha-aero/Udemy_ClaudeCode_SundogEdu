@@ -22,17 +22,17 @@ case $MODE in
     echo "   - Health checks enabled"
     echo "   - Accessible at http://localhost (or https://localhost)"
     echo ""
-    docker compose -f docker compose.prod.yml up -d
+    docker compose -f docker-compose.prod.yml up -d
     echo ""
     echo "✅ Services running in background"
-    echo "   View logs: docker compose -f docker compose.prod.yml logs -f"
-    echo "   Stop:      docker compose -f docker compose.prod.yml down"
+    echo "   View logs: docker compose -f docker-compose.prod.yml logs -f"
+    echo "   Stop:      docker compose -f docker-compose.prod.yml down"
     ;;
 
   stop)
     echo "⏹️  Stopping Radio Calico containers..."
-    if [ -f docker compose.prod.yml ]; then
-      docker compose -f docker compose.prod.yml down
+    if [ -f docker-compose.prod.yml ]; then
+      docker compose -f docker-compose.prod.yml down
     else
       docker compose down
     fi
@@ -40,7 +40,7 @@ case $MODE in
     ;;
 
   logs)
-    COMPOSE_FILE=${2:-docker compose.yml}
+    COMPOSE_FILE=${2:-docker-compose.yml}
     echo "📋 Showing logs..."
     docker compose -f "$COMPOSE_FILE" logs -f
     ;;
@@ -53,7 +53,7 @@ case $MODE in
     echo "  $0 prod         # Start in production mode"
     echo "  $0 stop         # Stop containers"
     echo "  $0 logs         # Show dev logs"
-    echo "  $0 logs docker compose.prod.yml  # Show prod logs"
+    echo "  $0 logs docker-compose.prod.yml  # Show prod logs"
     exit 1
     ;;
 esac

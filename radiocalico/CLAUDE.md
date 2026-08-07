@@ -191,4 +191,8 @@ export DB_PASSWORD=your_secure_password
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+**Health Check**:
+- [http://localhost/api/health](http://localhost/api/health) — API health endpoint (through Nginx)
+- Run `docker compose -f docker-compose.prod.yml ps` to verify all services are healthy
+
 See `docker_doc/DOCKER.md` for complete production setup and configuration guide.
