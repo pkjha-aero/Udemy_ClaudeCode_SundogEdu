@@ -114,7 +114,15 @@ jobs:
               ]
           )
 
-          review = message.content[0].text
+          # Extract text from response (skip thinking blocks)
+          review = ""
+          for block in message.content:
+              if hasattr(block, 'text'):
+                  review = block.text
+                  break
+
+          if not review:
+              review = "Code review completed. Please check the workflow logs for details."
 
           # Output for next step
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:

@@ -68,7 +68,15 @@ jobs:
               ]
           )
 
-          response = message.content[0].text
+          # Extract text from response (skip thinking blocks)
+          response = ""
+          for block in message.content:
+              if hasattr(block, 'text'):
+                  response = block.text
+                  break
+
+          if not response:
+              response = "Unable to generate response. Please check the workflow logs."
 
           # Output for next step
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
