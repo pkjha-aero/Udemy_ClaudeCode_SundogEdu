@@ -36,6 +36,9 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 # Copy entire app
 COPY . .
 
+# Create instance directory for database
+RUN mkdir -p /app/instance
+
 # Create a non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
@@ -51,12 +54,18 @@ CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
 # ============================================================================
 FROM base as prod
 
+# Install gunicorn (before switching to non-root user so pip works)
+RUN pip install --no-cache-dir gunicorn
+
 # Copy app (excluding dev files)
 COPY --chown=1000:1000 app ./app
 COPY --chown=1000:1000 run.py .
 COPY --chown=1000:1000 stream_URL.txt .
 COPY --chown=1000:1000 RadioCalico_Style_Guide.txt .
 COPY --chown=1000:1000 RadioCalicoLogoTM.png .
+
+# Create instance directory for database with correct ownership
+RUN mkdir -p /app/instance && chown -R 1000:1000 /app/instance
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser
@@ -70,5 +79,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/api/health', timeout=5)" || exit 1
 
 # Run with gunicorn for production
-RUN pip install --no-cache-dir gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "run:app"]
