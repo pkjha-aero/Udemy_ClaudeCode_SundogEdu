@@ -1,0 +1,158 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '**.py'
+      - '**.js'
+      - '**.ts'
+      - '**.tsx'
+      - '**.yaml'
+      - '**.yml'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic
+
+      - name: Get PR changes
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the list of changed files
+          gh pr diff ${{ github.event.pull_request.number }} > /tmp/pr.diff
+
+          # Get PR details
+          gh pr view ${{ github.event.pull_request.number }} --json title,body,author > /tmp/pr_info.json
+
+          # Count changed lines
+          ADDITIONS=$(grep '^+' /tmp/pr.diff | wc -l)
+          DELETIONS=$(grep '^-' /tmp/pr.diff | wc -l)
+
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+
+      - name: Review with Claude
+        id: review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python << 'EOF'
+          import os
+          import json
+          from anthropic import Anthropic
+
+          client = Anthropic()
+
+          # Read PR diff
+          with open('/tmp/pr.diff', 'r') as f:
+              diff = f.read()
+
+          # Read PR info
+          with open('/tmp/pr_info.json', 'r') as f:
+              pr_info = json.load(f)
+
+          # Truncate if too large
+          if len(diff) > 10000:
+              diff = diff[:10000] + "\n... (truncated)"
+
+          # Build review prompt
+          review_prompt = f"""
+          Pull Request: {pr_info['title']}
+          Author: {pr_info['author']['login']}
+
+          PR Description:
+          {pr_info['body']}
+
+          Changes (diff):
+          {diff}
+
+          Please provide a concise code review focusing on:
+          1. Correctness and potential bugs
+          2. Code quality and readability
+          3. Security concerns
+          4. Performance issues
+          5. Testing coverage
+
+          Keep the review brief and actionable (under 800 characters if possible).
+          Format as: **Category**: Brief comment
+          """
+
+          # Call Claude API
+          message = client.messages.create(
+              model="claude-opus-4-1-20250805",
+              max_tokens=1000,
+              system="""You are an expert code reviewer. Provide constructive, actionable feedback.
+              Focus on important issues, not minor style preferences.
+              Be encouraging but thorough.""",
+              messages=[
+                  {
+                      "role": "user",
+                      "content": review_prompt
+                  }
+              ]
+          )
+
+          review = message.content[0].text
+
+          # Output for next step
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"review<<EOF\n{review}\nEOF\n")
+          EOF
+
+      - name: Post review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const review = `${{ steps.review.outputs.review }}`;
+
+            github.rest.pulls.createReview({
+              pull_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: review,
+              event: 'COMMENT'
+            })
+
+      - name: Post summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `
+            ## 🤖 Claude Code Review Summary
+
+            - **Files Changed**: Multiple
+            - **Additions**: ${{ steps.changes.outputs.additions }}
+            - **Deletions**: ${{ steps.changes.outputs.deletions }}
+
+            See detailed review in the comments below.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            })

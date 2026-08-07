@@ -1,0 +1,87 @@
+name: Claude Comment Responder
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  respond:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '@claude')
+
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic
+
+      - name: Generate response with Claude
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python << 'EOF'
+          import os
+          import json
+          from anthropic import Anthropic
+
+          client = Anthropic()
+
+          issue_body = """${{ github.event.issue.body }}"""
+          comment_body = """${{ github.event.comment.body }}"""
+
+          # Build context
+          context = f"""
+          Repository: ${{ github.repository }}
+          Issue: #${{ github.event.issue.number }}
+          Title: ${{ github.event.issue.title }}
+
+          Issue Description:
+          {issue_body}
+
+          User Comment:
+          {comment_body}
+          """
+
+          # Call Claude API
+          message = client.messages.create(
+              model="claude-opus-4-1-20250805",
+              max_tokens=1024,
+              system="""You are a helpful GitHub assistant. Respond concisely to questions and issues.
+              Keep responses under 500 characters when possible. Be professional and helpful.""",
+              messages=[
+                  {
+                      "role": "user",
+                      "content": context
+                  }
+              ]
+          )
+
+          response = message.content[0].text
+
+          # Output for next step
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"response<<EOF\n{response}\nEOF\n")
+          EOF
+
+      - name: Post response
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${{ steps.claude.outputs.response }}`
+            })
