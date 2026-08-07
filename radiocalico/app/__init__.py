@@ -2,13 +2,23 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import secrets
+import os
 
 db = SQLAlchemy()
 
 
 def create_app():
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///radiocalico.db"
+
+    # Support PostgreSQL in production, SQLite in development
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        # PostgreSQL connection string
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    else:
+        # SQLite for development
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///radiocalico.db"
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = secrets.token_hex(32)
 
