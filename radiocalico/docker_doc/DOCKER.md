@@ -5,11 +5,12 @@ This guide covers containerizing and deploying the Radio Calico application usin
 ## Overview
 
 The Docker setup includes:
-- **Development Image**: Flask with hot-reload, debug mode, all dev dependencies
+- **Development Image**: Flask with hot-reload, debug mode, SQLite database, all dev dependencies
 - **Production Image**: Optimized with Gunicorn, minimal dependencies, non-root user
-- **Nginx Reverse Proxy**: Production-grade load balancing and SSL termination
+- **PostgreSQL 16**: Production database (Alpine Linux, health-checked)
+- **Nginx Reverse Proxy**: Production-grade reverse proxy on port 80
 - **Docker Compose**: Orchestration for both dev and prod environments
-- **Health Checks**: Automatic container health monitoring
+- **Health Checks**: PostgreSQL readiness check + Flask HTTP health check
 
 ## Architecture
 
@@ -257,10 +258,36 @@ docker rm radiocalico
 **Development**:
 - `.:/app` - Mount entire project for hot reload
 - `/app/venv` - Exclude venv (use container's version)
-- `/app/instance` - Persist database
+- `/app/instance` - SQLite database file
 
 **Production**:
-- `radiocalico-data:/app/instance` - Persist database
+- `radiocalico-db:/var/lib/postgresql/data` - PostgreSQL data persistence
+
+### Database Configuration
+
+**Development** (SQLite):
+- File-based database at `instance/radiocalico.db`
+- No additional configuration needed
+- Auto-creates on first run
+
+**Production** (PostgreSQL 16):
+- Container: `radiocalico-postgres`
+- Database: `radiocalico`
+- User: `radiocalico`
+- Password: Set via `DB_PASSWORD` env var (defaults to `radiocalico`)
+- Connection: `postgresql://radiocalico:password@postgres:5432/radiocalico`
+
+**Changing Password**:
+```bash
+# Before starting, set environment variable
+export DB_PASSWORD=your_secure_password
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Database Initialization**:
+- Flask automatically creates tables on startup
+- Default user seeded: Pankaj Jha (pankaj.psu@gmail.com)
+- Data persists in `radiocalico-db` volume
 
 ### SSL/TLS (Production - Optional)
 
