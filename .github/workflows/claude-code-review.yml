@@ -133,15 +133,17 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const review = `${{ steps.review.outputs.review }}`;
+            const review = ${{ toJson(steps.review.outputs.review) }};
 
-            github.rest.pulls.createReview({
-              pull_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: review,
-              event: 'COMMENT'
-            })
+            if (review && review.trim()) {
+              github.rest.pulls.createReview({
+                pull_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: review,
+                event: 'COMMENT'
+              });
+            }
 
       - name: Post summary
         if: always()
