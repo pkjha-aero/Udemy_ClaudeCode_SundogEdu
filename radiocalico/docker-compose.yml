@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  radiocalico-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    image: radiocalico:dev
+    container_name: radiocalico-dev
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    volumes:
+      - .:/app
+      - /app/venv  # Don't mount venv from host
+      - /app/instance  # Persist database
+    working_dir: /app
+    command: python run.py
+    networks:
+      - radiocalico-network
+
+networks:
+  radiocalico-network:
+    driver: bridge
