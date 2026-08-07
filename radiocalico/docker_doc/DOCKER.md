@@ -63,8 +63,8 @@ Production:
 # Option 1: Using provided script
 ./docker-run.sh dev
 
-# Option 2: Using docker-compose directly
-docker-compose up
+# Option 2: Using docker compose directly
+docker compose up
 
 # Option 3: Building first, then running
 docker build --target=dev -t radiocalico:dev .
@@ -89,8 +89,8 @@ Both URLs are equivalent on your local machine. Use whichever you prefer.
 # Option 1: Using provided script
 ./docker-run.sh prod
 
-# Option 2: Using docker-compose directly
-docker-compose -f docker-compose.prod.yml up -d
+# Option 2: Using docker compose directly
+docker compose -f docker-compose.prod.yml up -d
 
 # Option 3: Building first, then running
 docker build --target=prod -t radiocalico:prod .
@@ -122,14 +122,14 @@ Both `localhost` and `127.0.0.1` work interchangeably on your local machine. The
 | Deployment | Port | URLs that work |
 |---|---|---|
 | **Non-Docker** (native Flask) | 5000 | `http://localhost:5000` and `http://127.0.0.1:5000` |
-| **Docker Dev** (docker-compose up) | 5000 | `http://localhost:5000` and `http://127.0.0.1:5000` |
-| **Docker Prod** (docker-compose -f docker-compose.prod.yml up) | 80 | `http://localhost` and `http://127.0.0.1` |
+| **Docker Dev** (docker compose up) | 5000 | `http://localhost:5000` and `http://127.0.0.1:5000` |
+| **Docker Prod** (docker compose -f docker-compose.prod.yml up) | 80 | `http://localhost` and `http://127.0.0.1` |
 
 **Key Point**: The Flask app binds to `0.0.0.0`, which means it listens on all interfaces including both `127.0.0.1` and `localhost`. You can switch between the three deployment modes without changing your URL preferences.
 
 **Example**: If you prefer using `127.0.0.1:5000`, you can:
 1. Run non-Docker: `python run.py` → access at `http://127.0.0.1:5000`
-2. Run Docker dev: `docker-compose up` → access at `http://127.0.0.1:5000` (also works)
+2. Run Docker dev: `docker compose up` → access at `http://127.0.0.1:5000` (also works)
 3. Switch back to non-Docker anytime → access at `http://127.0.0.1:5000`
 
 No port conflicts, no state issues. Each mode has its own containers/processes.
@@ -174,35 +174,35 @@ radiocalico     prod       xyz789ghi012    2 minutes ago    380MB
 
 ```bash
 # Start with compose (includes logs)
-docker-compose up
+docker compose up
 
 # Start with compose in background
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Run tests
-docker-compose exec radiocalico-dev pytest tests/
+docker compose exec radiocalico-dev pytest tests/
 
 # Stop
-docker-compose down
+docker compose down
 ```
 
 ### Production
 
 ```bash
 # Start with compose
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # View logs
-docker-compose -f docker-compose.prod.yml logs -f radiocalico
+docker compose -f docker-compose.prod.yml logs -f radiocalico
 
 # Check health
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Stop
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 ```
 
 ### Direct Docker commands
@@ -276,7 +276,7 @@ openssl req -x509 -newkey rsa:4096 -nodes \
 
 # Uncomment HTTPS block in nginx.conf
 # Add port 443 to docker-compose.prod.yml ports section
-# Restart containers: docker-compose -f docker-compose.prod.yml up -d
+# Restart containers: docker compose -f docker-compose.prod.yml up -d
 ```
 
 **Option 2: Let's Encrypt (recommended for production)**
@@ -329,16 +329,16 @@ radiocalico-prod    Up (healthy)   0.0.0.0:5000->5000/tcp
 
 ```bash
 # All services
-docker-compose logs
+docker compose logs
 
 # Specific service
-docker-compose logs radiocalico-dev
+docker compose logs radiocalico-dev
 
 # Follow logs in real-time
-docker-compose logs -f
+docker compose logs -f
 
 # Last 100 lines
-docker-compose logs --tail=100
+docker compose logs --tail=100
 ```
 
 ### View resource usage
@@ -370,8 +370,8 @@ kill -9 $(lsof -t -i:5000)
 
 ```bash
 # Reset database (dev only)
-docker-compose down -v
-docker-compose up
+docker compose down -v
+docker compose up
 
 # Inspect database volume
 docker volume ls
@@ -382,7 +382,7 @@ docker volume inspect radiocalico_radiocalico-data
 
 ```bash
 # Fix file permissions
-docker-compose exec radiocalico-dev chmod 777 instance/
+docker compose exec radiocalico-dev chmod 777 instance/
 
 # Or rebuild with correct ownership
 docker build --target=prod --no-cache -t radiocalico:prod .
@@ -427,7 +427,7 @@ docker network prune
 ```bash
 # Pull and run
 docker pull radiocalico:prod
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Docker Swarm
@@ -515,7 +515,7 @@ jobs:
         run: docker push radiocalico:${{ github.sha }}
       
       - name: Deploy
-        run: docker-compose -f docker-compose.prod.yml up -d
+        run: docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Maintenance
@@ -527,7 +527,7 @@ jobs:
 docker build --no-cache -t radiocalico:prod .
 
 # Update running container
-docker-compose -f docker-compose.prod.yml up -d --force-recreate
+docker compose -f docker-compose.prod.yml up -d --force-recreate
 ```
 
 ### Backup database
@@ -555,7 +555,7 @@ docker run --rm -v radiocalico_radiocalico-data:/data \
 ## Support
 
 For issues or questions:
-1. Check logs: `docker-compose logs -f`
+1. Check logs: `docker compose logs -f`
 2. Review this guide's Troubleshooting section
 3. Check Docker documentation
 4. Open an issue on GitHub

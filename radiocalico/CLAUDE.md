@@ -32,13 +32,13 @@ Accessible at: http://127.0.0.1:5000 or http://localhost:5000
 
 **Or run in Docker** (with hot reload):
 ```bash
-docker-compose up
+docker compose up
 ```
 Accessible at: http://127.0.0.1:5000 or http://localhost:5000
 
 **Production mode in Docker** (with Nginx on port 80):
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 Accessible at: http://127.0.0.1 or http://localhost
 
