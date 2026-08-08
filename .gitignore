@@ -1,12 +1,46 @@
+# Virtual environments
 venv/
-__pycache__/
-*.pyc
-instance/
-*.db
-.env
+env/
+.venv/
 
-# Test and coverage
-.coverage
-htmlcov/
-.pytest_cache/
-*.cover
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing and coverage (radiocalico project)
+radiocalico/.coverage
+radiocalico/.coverage.*
+radiocalico/htmlcov/
+radiocalico/.pytest_cache/
+radiocalico/.tox/
+radiocalico/*.cover
+radiocalico/.hypothesis/
+
+# Project-specific (radiocalico)
+radiocalico/instance/
+radiocalico/*.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS files
+.AppleDouble
+.LSOverride
+*.sublime-workspace
+
+# Docker volumes (radiocalico)
+radiocalico/ssl/
