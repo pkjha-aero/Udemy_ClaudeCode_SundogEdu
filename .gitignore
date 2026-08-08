@@ -4,3 +4,9 @@ __pycache__/
 instance/
 *.db
 .env
+
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+*.cover
