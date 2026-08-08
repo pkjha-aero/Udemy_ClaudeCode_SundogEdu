@@ -5,11 +5,12 @@ This guide covers containerizing and deploying the Radio Calico application usin
 ## Overview
 
 The Docker setup includes:
-- **Development Image**: Flask with hot-reload, debug mode, all dev dependencies
+- **Development Image**: Flask with hot-reload, debug mode, SQLite database, all dev dependencies
 - **Production Image**: Optimized with Gunicorn, minimal dependencies, non-root user
-- **Nginx Reverse Proxy**: Production-grade load balancing and SSL termination
+- **PostgreSQL 16**: Production database (Alpine Linux, health-checked)
+- **Nginx Reverse Proxy**: Production-grade reverse proxy on port 80
 - **Docker Compose**: Orchestration for both dev and prod environments
-- **Health Checks**: Automatic container health monitoring
+- **Health Checks**: PostgreSQL readiness check + Flask HTTP health check
 
 ## Architecture
 
@@ -257,10 +258,36 @@ docker rm radiocalico
 **Development**:
 - `.:/app` - Mount entire project for hot reload
 - `/app/venv` - Exclude venv (use container's version)
-- `/app/instance` - Persist database
+- `/app/instance` - SQLite database file
 
 **Production**:
-- `radiocalico-data:/app/instance` - Persist database
+- `radiocalico-db:/var/lib/postgresql/data` - PostgreSQL data persistence
+
+### Database Configuration
+
+**Development** (SQLite):
+- File-based database at `instance/radiocalico.db`
+- No additional configuration needed
+- Auto-creates on first run
+
+**Production** (PostgreSQL 16):
+- Container: `radiocalico-postgres`
+- Database: `radiocalico`
+- User: `radiocalico`
+- Password: Set via `DB_PASSWORD` env var (defaults to `radiocalico`)
+- Connection: `postgresql://radiocalico:password@postgres:5432/radiocalico`
+
+**Changing Password**:
+```bash
+# Before starting, set environment variable
+export DB_PASSWORD=your_secure_password
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Database Initialization**:
+- Flask automatically creates tables on startup
+- Default user seeded: Pankaj Jha (pankaj.psu@gmail.com)
+- Data persists in `radiocalico-db` volume
 
 ### SSL/TLS (Production - Optional)
 
@@ -297,12 +324,12 @@ sudo certbot certonly --standalone -d yourdomain.com
 
 ## Health Checks
 
-Production containers include automated health checks (defined in Dockerfile):
+Production containers include automated health checks:
 
 **Health Check Implementation:**
-- Uses Python's built-in `urllib` (no external dependencies)
-- Checks `/api/health` endpoint every 30 seconds
-- Container shows "Up (healthy)" or "Up (unhealthy)" status
+- **Flask App**: Uses Python's built-in `urllib`, checks `/api/health` endpoint every 30 seconds
+- **PostgreSQL**: Uses `pg_isready` command every 10 seconds
+- Containers show "Up (healthy)" or "Up (unhealthy)" status
 
 **View container health:**
 
@@ -312,15 +339,25 @@ docker ps
 
 # Detailed health info with history
 docker inspect radiocalico-prod --format='{{json .State.Health}}'
-
-# Manual health check (curl also works)
-curl http://localhost:5000/api/health
-# Response: {"status": "ok"}
 ```
+
+**Health Check Endpoints:**
+
+Access these links to verify services are running (requires services to be started):
+
+- **Flask API Health** (internal): [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Nginx Proxy Health**: [http://localhost/api/health](http://localhost/api/health)
+- **Curl command**:
+  ```bash
+  curl http://localhost/api/health
+  # Response: {"status":"ok"}
+  ```
 
 **Expected output when healthy:**
 ```
-radiocalico-prod    Up (healthy)   0.0.0.0:5000->5000/tcp
+radiocalico-nginx      Up (healthy)   0.0.0.0:80->80/tcp
+radiocalico-prod       Up (healthy)   0.0.0.0:5000->5000/tcp
+radiocalico-postgres   Up (healthy)   5432/tcp
 ```
 
 ## Logs and Monitoring

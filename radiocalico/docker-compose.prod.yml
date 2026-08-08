@@ -1,6 +1,24 @@
 version: '3.9'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: radiocalico-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=radiocalico
+      - POSTGRES_USER=radiocalico
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-radiocalico}
+    volumes:
+      - radiocalico-db:/var/lib/postgresql/data
+    networks:
+      - radiocalico-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radiocalico"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   radiocalico:
     build:
       context: .
@@ -14,8 +32,9 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-    volumes:
-      - radiocalico-data:/app/instance
+      - DATABASE_URL=postgresql://radiocalico:${DB_PASSWORD:-radiocalico}@postgres:5432/radiocalico
+    depends_on:
+      - postgres
     networks:
       - radiocalico-network
 
@@ -34,7 +53,7 @@ services:
       - radiocalico-network
 
 volumes:
-  radiocalico-data:
+  radiocalico-db:
     driver: local
 
 networks:

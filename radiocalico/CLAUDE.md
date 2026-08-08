@@ -13,8 +13,11 @@ Local prototype website. Flask + SQLite, native install (no Docker) in a Python 
 ## Stack
 
 - **Webserver**: Flask (app factory pattern in `app/__init__.py`)
-- **Database**: SQLite via Flask-SQLAlchemy, file at `instance/radiocalico.db` (auto-created on first run, gitignored)
+- **Database**: 
+  - Development: SQLite via Flask-SQLAlchemy, file at `instance/radiocalico.db`
+  - Production: PostgreSQL 16 (via Docker)
 - **Env**: Python 3.12 virtualenv at `venv/` (gitignored)
+- **Production**: Gunicorn WSGI server + Nginx reverse proxy (Docker)
 
 ## Development
 
@@ -162,3 +165,34 @@ pytest --cov=app --cov-report=html
 - Radio player at `/player` streams lossless HLS with teal header/logo, two-column layout, dynamic album art, track info, and session-based song ratings (thumbs up/down with aggregate counts).
 - `Item` model exists but no form to create items yet.
 - Unit testing infrastructure in place: 120+ test cases across 8 phases covering models, routes, API, integration, ratings system, edge cases, and session management.
+- Docker containerization complete with dev/prod targets, Nginx reverse proxy, and PostgreSQL for production.
+
+## Production Deployment
+
+**Database**: PostgreSQL 16 (Alpine)
+- Configure via `DB_PASSWORD` environment variable (defaults to "radiocalico")
+- Connection string: `postgresql://radiocalico:password@postgres:5432/radiocalico`
+
+**Services**:
+- Flask + Gunicorn: Application server on port 5000 (internal)
+- PostgreSQL: Database server on port 5432 (internal)
+- Nginx: Reverse proxy on port 80 (external)
+
+**Health Checks**:
+- PostgreSQL: `pg_isready` check every 10s
+- Flask: HTTP health check to `/api/health` every 30s
+
+**Startup**:
+```bash
+# Set custom password (optional, defaults to "radiocalico")
+export DB_PASSWORD=your_secure_password
+
+# Start production stack
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Health Check**:
+- [http://localhost/api/health](http://localhost/api/health) — API health endpoint (through Nginx)
+- Run `docker compose -f docker-compose.prod.yml ps` to verify all services are healthy
+
+See `docker_doc/DOCKER.md` for complete production setup and configuration guide.
