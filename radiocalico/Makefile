@@ -1,0 +1,207 @@
+.PHONY: help setup dev prod stop logs test test-coverage build clean
+
+# Variables
+VENV_DIR := venv
+PYTHON := $(VENV_DIR)/bin/python
+PIP := $(VENV_DIR)/bin/pip
+DOCKER_COMPOSE_DEV := docker compose
+DOCKER_COMPOSE_PROD := docker compose -f docker-compose.prod.yml
+DB_PASSWORD ?= radiocalico
+
+# Colors for output
+BLUE := \033[0;34m
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+NC := \033[0m # No Color
+
+help: ## Show this help message
+	@echo "$(BLUE)Radio Calico - Make Targets$(NC)"
+	@echo ""
+	@echo "$(GREEN)Development:$(NC)"
+	@echo "  make setup          - Set up virtual environment and install dependencies"
+	@echo "  make dev            - Start development server (SQLite, port 5000)"
+	@echo "  make dev-clean      - Clean and start fresh development environment"
+	@echo ""
+	@echo "$(GREEN)Production:$(NC)"
+	@echo "  make prod           - Start production stack (PostgreSQL, Nginx, port 80)"
+	@echo "  make prod-build     - Build production images"
+	@echo ""
+	@echo "$(GREEN)Testing:$(NC)"
+	@echo "  make test           - Run all tests with pytest"
+	@echo "  make test-coverage  - Run tests with coverage report"
+	@echo "  make test-watch     - Run tests in watch mode (requires pytest-watch)"
+	@echo ""
+	@echo "$(GREEN)Utilities:$(NC)"
+	@echo "  make logs-dev       - View development logs"
+	@echo "  make logs-prod      - View production logs"
+	@echo "  make stop           - Stop all containers"
+	@echo "  make clean          - Clean up containers and volumes"
+	@echo "  make build          - Build Docker images"
+	@echo "  make health         - Check health endpoints"
+	@echo ""
+	@echo "$(GREEN)Examples:$(NC)"
+	@echo "  DB_PASSWORD=mysecret make prod    - Start prod with custom DB password"
+	@echo "  make test && make dev             - Run tests then start dev"
+
+## Setup & Installation
+
+setup: ## Set up virtual environment and install dependencies
+	@echo "$(BLUE)Setting up Python virtual environment...$(NC)"
+	python3 -m venv $(VENV_DIR)
+	@echo "$(BLUE)Installing dependencies...$(NC)"
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
+	@echo "$(GREEN)✅ Setup complete!$(NC)"
+	@echo "Activate with: source $(VENV_DIR)/bin/activate"
+
+## Development Mode
+
+dev: ## Start development server (Flask + SQLite)
+	@echo "$(BLUE)🚀 Starting Radio Calico in DEVELOPMENT mode...$(NC)"
+	@echo "   - Flask debug enabled"
+	@echo "   - Hot reload on file changes"
+	@echo "   - SQLite database"
+	@echo "   - Accessible at http://127.0.0.1:5000"
+	@echo ""
+	$(DOCKER_COMPOSE_DEV) up
+
+dev-clean: ## Clean and start fresh development environment
+	@echo "$(BLUE)Cleaning up development environment...$(NC)"
+	$(DOCKER_COMPOSE_DEV) down --remove-orphans -v
+	rm -f instance/radiocalico.db
+	@echo "$(GREEN)✅ Development environment cleaned$(NC)"
+	$(MAKE) dev
+
+dev-stop: ## Stop development container
+	@echo "$(BLUE)Stopping development container...$(NC)"
+	$(DOCKER_COMPOSE_DEV) down
+
+## Production Mode
+
+prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
+	@echo "$(BLUE)🚀 Starting Radio Calico in PRODUCTION mode...$(NC)"
+	@echo "   - Gunicorn with 4 workers"
+	@echo "   - PostgreSQL database"
+	@echo "   - Nginx reverse proxy"
+	@echo "   - Health checks enabled"
+	@echo "   - Accessible at http://localhost"
+	@echo ""
+	DB_PASSWORD=$(DB_PASSWORD) $(DOCKER_COMPOSE_PROD) up -d
+	@echo "$(GREEN)✅ Services running in background$(NC)"
+	@echo "   View logs:  make logs-prod"
+	@echo "   Stop:       make stop"
+	@echo "   Health:     make health"
+
+prod-build: ## Build production Docker images
+	@echo "$(BLUE)Building production Docker images...$(NC)"
+	docker build --target=prod -t radiocalico:prod .
+	@echo "$(GREEN)✅ Production images built$(NC)"
+
+prod-stop: ## Stop production stack
+	@echo "$(BLUE)Stopping production stack...$(NC)"
+	$(DOCKER_COMPOSE_PROD) down
+
+## Testing
+
+test: ## Run all tests with pytest
+	@echo "$(BLUE)Running tests...$(NC)"
+	$(PYTHON) -m pytest tests/ -v
+
+test-coverage: ## Run tests with coverage report (HTML + terminal)
+	@echo "$(BLUE)Running tests with coverage...$(NC)"
+	$(PYTHON) -m pytest --cov=app --cov-report=html --cov-report=term-missing tests/
+	@echo "$(GREEN)✅ Coverage report generated$(NC)"
+	@echo "   HTML report: htmlcov/index.html"
+
+test-specific: ## Run specific test file (usage: make test-specific TEST=tests/test_api.py)
+	@if [ -z "$(TEST)" ]; then \
+		echo "$(YELLOW)Usage: make test-specific TEST=tests/test_file.py$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Running $(TEST)...$(NC)"
+	$(PYTHON) -m pytest $(TEST) -v
+
+test-watch: ## Run tests in watch mode (requires pytest-watch)
+	@echo "$(BLUE)Running tests in watch mode...$(NC)"
+	$(PYTHON) -m ptw tests/ -- -v
+
+## Logging & Monitoring
+
+logs-dev: ## View development logs
+	@echo "$(BLUE)Development logs:$(NC)"
+	$(DOCKER_COMPOSE_DEV) logs -f
+
+logs-prod: ## View production logs
+	@echo "$(BLUE)Production logs:$(NC)"
+	$(DOCKER_COMPOSE_PROD) logs -f
+
+health: ## Check health endpoints
+	@echo "$(BLUE)Checking health endpoints...$(NC)"
+	@echo "Development (port 5000):"
+	@curl -s http://localhost:5000/api/health || echo "$(YELLOW)Dev not running$(NC)"
+	@echo ""
+	@echo "Production (port 80):"
+	@curl -s http://localhost/api/health || echo "$(YELLOW)Prod not running$(NC)"
+
+status: ## Show container status
+	@echo "$(BLUE)Container Status:$(NC)"
+	@echo "Development:"
+	@$(DOCKER_COMPOSE_DEV) ps || true
+	@echo ""
+	@echo "Production:"
+	@$(DOCKER_COMPOSE_PROD) ps || true
+
+## Building & Images
+
+build: ## Build Docker images (dev and prod)
+	@echo "$(BLUE)Building Docker images...$(NC)"
+	docker build --target=dev -t radiocalico:dev .
+	docker build --target=prod -t radiocalico:prod .
+	@echo "$(GREEN)✅ Docker images built$(NC)"
+	docker images | grep radiocalico
+
+build-dev: ## Build development Docker image only
+	@echo "$(BLUE)Building development image...$(NC)"
+	docker build --target=dev -t radiocalico:dev .
+	@echo "$(GREEN)✅ Development image built$(NC)"
+
+build-prod: ## Build production Docker image only
+	@echo "$(BLUE)Building production image...$(NC)"
+	docker build --target=prod -t radiocalico:prod .
+	@echo "$(GREEN)✅ Production image built$(NC)"
+
+## Cleanup
+
+stop: ## Stop all containers (dev and prod)
+	@echo "$(BLUE)Stopping all containers...$(NC)"
+	@$(DOCKER_COMPOSE_DEV) down 2>/dev/null || true
+	@$(DOCKER_COMPOSE_PROD) down 2>/dev/null || true
+	@echo "$(GREEN)✅ All containers stopped$(NC)"
+
+clean: ## Remove containers, volumes, and cache
+	@echo "$(BLUE)Cleaning up containers, volumes, and cache...$(NC)"
+	@$(DOCKER_COMPOSE_DEV) down -v 2>/dev/null || true
+	@$(DOCKER_COMPOSE_PROD) down -v 2>/dev/null || true
+	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@rm -rf .pytest_cache htmlcov .coverage 2>/dev/null || true
+	@echo "$(GREEN)✅ Cleanup complete$(NC)"
+
+clean-db: ## Remove database files (development only)
+	@echo "$(BLUE)Removing database files...$(NC)"
+	rm -f instance/radiocalico.db
+	@echo "$(GREEN)✅ Database files removed$(NC)"
+
+## Quick Workflows
+
+run: dev ## Alias for 'make dev'
+
+start-prod: prod ## Alias for 'make prod'
+
+all-tests: clean setup test ## Clean, setup, and run all tests
+
+reset: clean setup ## Full reset: clean and reinstall dependencies
+	@echo "$(GREEN)✅ Project reset to clean state$(NC)"
+	@echo "Run 'make dev' to start development"
+
+.DEFAULT_GOAL := help

@@ -21,7 +21,15 @@ Local prototype website. Flask + SQLite, native install (no Docker) in a Python 
 
 ## Development
 
-**Setup:**
+**Quick Start with Make** (recommended):
+```bash
+make dev              # Start development server with Docker
+make test             # Run all tests
+make prod             # Start production stack
+make help             # Show all available targets
+```
+
+**Manual Setup**:
 ```bash
 python3 -m venv venv
 ./venv/bin/python -m pip install -r requirements.txt
@@ -106,6 +114,45 @@ Site implements Radio Calico brand style guide:
 - `pip install --user` blocked by PEP 668; always use venv, never `--user` or `--break-system-packages`.
 - NTFS-mounted repo: executable bits on files in `venv/bin/` aren't reliable. `./venv/bin/pip` may fail with "Permission denied". Use `./venv/bin/python -m pip ...` instead (always works).
 - Git repository root is **one directory above** `radiocalico/` (i.e. `Udemy_ClaudeCode_SundogEdu/`). Run git commands from there, not from `radiocalico/`; `git status` at the repo root will show `radiocalico/` as a subpath.
+
+## Makefile Targets
+
+For convenience, use `make` to manage the project:
+
+**Development:**
+- `make dev` — Start dev server (Flask + SQLite, port 5000)
+- `make dev-clean` — Clean and restart dev environment
+- `make setup` — Install dependencies in virtual environment
+
+**Production:**
+- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80)
+- `make prod-build` — Build production Docker images
+- `make prod-stop` — Stop production stack
+
+**Testing:**
+- `make test` — Run all tests with pytest
+- `make test-coverage` — Run tests with HTML coverage report
+- `make test-specific TEST=tests/test_api.py` — Run specific test file
+
+**Utilities:**
+- `make build` — Build all Docker images
+- `make logs-dev` — View development logs
+- `make logs-prod` — View production logs
+- `make health` — Check health endpoints
+- `make status` — Show container status
+- `make stop` — Stop all containers
+- `make clean` — Remove containers and volumes
+- `make reset` — Full reset to clean state
+
+**Examples:**
+```bash
+make help                         # Show all targets
+make dev                          # Start development
+make test && make dev             # Run tests then start dev
+DB_PASSWORD=secret make prod      # Start prod with custom password
+make test-coverage                # Run tests with coverage report
+make all-tests                    # Clean, setup, and run all tests
+```
 
 ## Testing
 
