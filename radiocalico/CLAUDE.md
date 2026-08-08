@@ -204,7 +204,32 @@ pytest --cov=app --cov-report=html
 - `tests/test_edge_cases.py` — error handling (20 tests)
 - `tests/test_session_management.py` — session isolation (15 tests)
 
-**CI/CD:** `.github/workflows/tests.yml` runs pytest on push/PR with 88% coverage gate.
+**CI/CD:** Automated testing, code review, and containerization on every PR:
+- `.github/workflows/tests.yml` — Pytest suite with 88% coverage gate
+- `.github/workflows/claude-code-review.yml` — AI code review (Claude Haiku 4.5)
+- `.github/workflows/docker-build.yml` — Docker image builds + smoke tests
+- `.github/scripts/` — Standalone Python scripts for code review, issue analysis, doc generation (Haiku 4.5)
+
+## GitHub Automation & Claude Integration
+
+The repository includes AI-powered automation using Claude Haiku 4.5 for cost-effective intelligent workflows:
+
+**Workflows triggered on PR:**
+- **Code Review** — Claude analyzes diffs for bugs, quality, security, performance, test coverage
+- **Docker Build & Test** — Builds and smoke-tests dev/prod images on containerization changes
+- **Unit Tests** — Pytest with 88% coverage gate (blocks merge if fails)
+
+**Issue & Comment Automation:**
+- **@claude mentions** — Respond to `@claude` in PR/issue comments (`.github/workflows/claude.yml`)
+- **Issue Analysis** — Auto-classify bugs/features, suggest priority (`.github/scripts/process_issues.py`)
+- **Code Review Script** — Standalone script for detailed PR review (`.github/scripts/claude_code_review.py`)
+- **Doc Generation** — Auto-generate API docs from codebase (`.github/scripts/generate_docs.py`)
+
+**Why Claude Haiku 4.5:**
+- 90% cheaper than Opus 5 (~$0.08/month vs $0.60/month)
+- Sufficient for all automation tasks: code quality, classification, analysis
+- Faster responses (better for CI/CD workflows)
+- Can upgrade to Opus 5 for complex architectural reviews
 
 ## Current state
 
