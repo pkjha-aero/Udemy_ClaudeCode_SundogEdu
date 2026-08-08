@@ -82,7 +82,7 @@ Code changes (diff):
 """
 
     message = client.messages.create(
-        model="claude-opus-5",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         system="""You are an expert code reviewer. Analyze the provided PR diff and provide:
 1. Summary of changes
