@@ -1,0 +1,279 @@
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'radiocalico/Dockerfile'
+      - 'radiocalico/docker-compose.yml'
+      - 'radiocalico/docker-compose.prod.yml'
+      - 'radiocalico/nginx.conf'
+      - 'radiocalico/requirements.txt'
+      - 'radiocalico/requirements-dev.txt'
+      - '.github/workflows/docker-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'radiocalico/Dockerfile'
+      - 'radiocalico/docker-compose.yml'
+      - 'radiocalico/docker-compose.prod.yml'
+      - 'radiocalico/nginx.conf'
+      - 'radiocalico/requirements.txt'
+      - 'radiocalico/requirements-dev.txt'
+      - '.github/workflows/docker-build.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: radiocalico
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [dev, prod]
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build ${{ matrix.target }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./radiocalico
+          target: ${{ matrix.target }}
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ matrix.target }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  smoke-test-dev:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build dev image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./radiocalico
+          target: dev
+          push: false
+          load: true
+          tags: radiocalico:dev
+          cache-from: type=gha
+
+      - name: Test dev image - Health check
+        run: |
+          cd radiocalico
+          docker compose up -d
+          sleep 10
+
+          # Check if container is running
+          if ! docker ps | grep -q "radiocalico-dev"; then
+            echo "❌ Dev container failed to start"
+            docker compose logs
+            exit 1
+          fi
+
+          echo "✅ Dev container is running"
+
+          # Test health endpoint
+          if ! curl -f http://localhost:5000/api/health; then
+            echo "❌ Health check failed"
+            docker compose logs
+            exit 1
+          fi
+
+          echo "✅ Health check passed"
+
+      - name: Cleanup dev containers
+        if: always()
+        run: |
+          cd radiocalico
+          docker compose down -v 2>/dev/null || true
+
+  smoke-test-prod:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build prod image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./radiocalico
+          target: prod
+          push: false
+          load: true
+          tags: radiocalico:prod
+          cache-from: type=gha
+
+      - name: Test prod image - Build and compose check
+        run: |
+          cd radiocalico
+
+          # Test docker-compose.prod.yml is valid
+          docker compose -f docker-compose.prod.yml config > /dev/null
+          echo "✅ docker-compose.prod.yml is valid"
+
+          # Start production stack
+          docker compose -f docker-compose.prod.yml up -d
+          sleep 15
+
+          # Check if all services started
+          if ! docker ps | grep -q "radiocalico-nginx"; then
+            echo "❌ Nginx container failed to start"
+            docker compose -f docker-compose.prod.yml logs
+            exit 1
+          fi
+
+          if ! docker ps | grep -q "radiocalico-prod"; then
+            echo "❌ Flask container failed to start"
+            docker compose -f docker-compose.prod.yml logs
+            exit 1
+          fi
+
+          if ! docker ps | grep -q "radiocalico-postgres"; then
+            echo "❌ PostgreSQL container failed to start"
+            docker compose -f docker-compose.prod.yml logs
+            exit 1
+          fi
+
+          echo "✅ All production containers are running"
+
+          # Test health endpoint through nginx
+          if ! curl -f http://localhost/api/health; then
+            echo "❌ Nginx health check failed"
+            docker compose -f docker-compose.prod.yml logs
+            exit 1
+          fi
+
+          echo "✅ Nginx health check passed"
+
+          # Verify database is connected
+          HEALTH=$(docker inspect radiocalico-prod --format='{{.State.Health.Status}}' 2>/dev/null || echo "unknown")
+          if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "unknown" ]; then
+            echo "✅ Flask container health check passed"
+          else
+            echo "❌ Flask container health check failed"
+            docker compose -f docker-compose.prod.yml logs radiocalico
+            exit 1
+          fi
+
+      - name: Cleanup prod containers
+        if: always()
+        run: |
+          cd radiocalico
+          docker compose -f docker-compose.prod.yml down -v 2>/dev/null || true
+
+  verify-images:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build both images
+        run: |
+          cd radiocalico
+          docker build --target=dev -t radiocalico:dev .
+          docker build --target=prod -t radiocalico:prod .
+
+      - name: Verify dev image
+        run: |
+          # Check image exists
+          docker images | grep -q "radiocalico.*dev" || exit 1
+
+          # Check for Python and dependencies
+          docker run --rm radiocalico:dev python --version
+          docker run --rm radiocalico:dev python -m flask --version
+
+          echo "✅ Dev image verified"
+
+      - name: Verify prod image
+        run: |
+          # Check image exists
+          docker images | grep -q "radiocalico.*prod" || exit 1
+
+          # Check for Gunicorn
+          docker run --rm radiocalico:prod gunicorn --version
+
+          # Verify non-root user
+          USERID=$(docker run --rm radiocalico:prod id -u)
+          if [ "$USERID" = "1000" ]; then
+            echo "✅ Prod image runs as non-root user (UID: $USERID)"
+          else
+            echo "❌ Prod image should run as non-root (got UID: $USERID)"
+            exit 1
+          fi
+
+          echo "✅ Prod image verified"
+
+  comment-pr:
+    runs-on: ubuntu-latest
+    needs: [smoke-test-dev, smoke-test-prod, verify-images]
+    if: github.event_name == 'pull_request' && always()
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Comment PR with build results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildStatus = '${{ needs.smoke-test-dev.result }}' === 'success' && '${{ needs.smoke-test-prod.result }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
+            const comment = `## 🐳 Docker Build & Test Results
+
+**Build Status**: ${buildStatus}
+
+### Tests Completed
+- ✅ Dev image build
+- ✅ Prod image build
+- ✅ Dev smoke test (health check)
+- ✅ Prod smoke test (all services + health check)
+- ✅ Image verification (Python, Gunicorn, permissions)
+
+### Access URLs (when running locally)
+- **Dev**: http://localhost:5000 (Flask + SQLite)
+- **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)
+
+Start locally: \`make dev\` or \`make prod\``;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

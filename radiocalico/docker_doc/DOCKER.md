@@ -534,26 +534,53 @@ docker service update --replicas 3 radiocalico
 
 ## CI/CD Integration
 
-### GitHub Actions Example
+### Docker Build & Test Workflow
 
-```yaml
-name: Build and Push Docker Image
-on: [push]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Build image
-        run: docker build -t radiocalico:${{ github.sha }} .
-      
-      - name: Push to registry
-        run: docker push radiocalico:${{ github.sha }}
-      
-      - name: Deploy
-        run: docker compose -f docker-compose.prod.yml up -d
+Radio Calico includes an automated Docker build and smoke test workflow (`.github/workflows/docker-build.yml`) that runs on every PR and push.
+
+**Workflow Features:**
+- ✅ Builds both dev and prod images with layer caching
+- ✅ Smoke tests: verifies Flask startup, health endpoints, all services
+- ✅ Image verification: confirms Python/Gunicorn versions and non-root user
+- ✅ PR comments: posts build status and detailed results
+
+**When it runs:**
+- On push to `main` branch
+- On pull requests to `main` branch
+- Manual trigger via GitHub Actions UI
+- Only when Docker-related files change (Dockerfile, docker-compose, nginx.conf, requirements)
+
+**Test Coverage:**
+1. **Dev image** — Flask startup + `/api/health` endpoint
+2. **Prod image** — All services (Nginx, Flask, PostgreSQL) + health checks
+3. **Security** — Verifies non-root user (UID 1000)
+4. **Registry** — Logs into GitHub Container Registry (on push to main)
+
+**Example PR Comment:**
 ```
+## 🐳 Docker Build & Test Results
+
+**Build Status**: ✅ PASSED
+
+### Tests Completed
+- ✅ Dev image build
+- ✅ Prod image build
+- ✅ Dev smoke test (health check)
+- ✅ Prod smoke test (all services + health check)
+- ✅ Image verification (Python, Gunicorn, permissions)
+
+### Access URLs (when running locally)
+- **Dev**: http://localhost:5000 (Flask + SQLite)
+- **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)
+```
+
+### Custom GitHub Actions Workflows
+
+Additional workflows in `.github/workflows/`:
+- **tests.yml** — Unit tests with pytest (88% coverage gate)
+- **claude-code-review.yml** — AI-powered code review
+- **claude.yml** — Claude integration responder
+- **docker-build.yml** — Docker build and smoke tests (new)
 
 ## Maintenance
 
