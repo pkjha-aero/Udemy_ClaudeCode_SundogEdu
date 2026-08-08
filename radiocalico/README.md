@@ -1,21 +1,24 @@
 # Radio Calico (local prototype)
 
-Flask webserver + SQLite database for local prototyping.
+Flask webserver + SQLite database for local prototyping. Full containerization with Docker dev/prod, automated testing, and AI-powered code review.
 
-## Setup
+## Quick Start
 
+**With Docker** (recommended):
+```bash
+make dev    # Start development server with hot reload
+make test   # Run all tests
+make prod   # Start production stack (PostgreSQL + Nginx)
+```
+
+**Manual Setup:**
 ```bash
 python3 -m venv venv
 ./venv/bin/python -m pip install -r requirements.txt
-```
-
-## Run
-
-```bash
 ./venv/bin/python run.py
 ```
 
-Server runs at http://127.0.0.1:5000
+Server runs at http://127.0.0.1:5000 or http://localhost:5000
 
 ## Features
 
@@ -35,3 +38,18 @@ Access the HLS radio player at: **http://127.0.0.1:5000/player**
 - Uses HLS.js library for cross-browser support
 
 The SQLite database is created automatically at `instance/radiocalico.db` on first run.
+
+## CI/CD & Automation
+
+**Automated on Every PR:**
+- ✅ Unit tests (pytest, 88% coverage gate)
+- ✅ AI code review (Claude Haiku 4.5)
+- ✅ Docker build & smoke tests
+- ✅ Issue classification & analysis
+
+**Local Commands:**
+- `make help` — Show all available targets
+- `make test-coverage` — Generate coverage report
+- `make clean` — Clean up containers and cache
+
+See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [docker_doc/DOCKER.md](docker_doc/DOCKER.md) for containerization details.
