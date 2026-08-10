@@ -231,6 +231,43 @@ The repository includes AI-powered automation using Claude Haiku 4.5 for cost-ef
 - Faster responses (better for CI/CD workflows)
 - Can upgrade to Opus 5 for complex architectural reviews
 
+## Security
+
+**Comprehensive Security Scanning** (`.github/workflows/security.yml`):
+- **Secrets Scanning** — TruffleHog detects exposed credentials and tokens
+- **Python SAST** — Bandit identifies code vulnerabilities (SQL injection, XSS, etc.)
+- **Dependency Scanning** — Safety checks for known vulnerabilities in packages
+- **Container Scanning** — Trivy scans Docker images for CVEs
+- **Dockerfile Linting** — Hadolint enforces security best practices
+- **Code Analysis** — CodeQL performs advanced static analysis
+- **Runs** — Every PR + daily schedule (via `schedule` trigger)
+
+**Automated Dependency Updates** (`.github/dependabot.yml`):
+- Weekly Python package updates (from `requirements.txt`)
+- Weekly Docker base image updates (python, postgres, nginx)
+- Weekly GitHub Actions updates
+- Creates PRs with security/dependency labels for review
+
+**Docker Security:**
+- Non-root execution (UID 1000)
+- Minimal images (slim, alpine variants)
+- Health checks for automatic container restart
+- No secrets in images (env vars only)
+
+**Application Security:**
+- SQLAlchemy ORM prevents SQL injection
+- Jinja2 template auto-escaping prevents XSS
+- Nginx security headers (X-Frame-Options, X-XSS-Protection, etc.)
+- Rate limiting (10 req/s general, 100 req/s API)
+- CORS configured appropriately
+
+**Vulnerability Disclosure:**
+See [SECURITY.md](../SECURITY.md) for:
+- Security policy and contact information
+- Vulnerability reporting process
+- Known limitations and considerations
+- Security checklist for contributors
+
 ## Current state
 
 - Homepage features hero section with "Listen Now" CTA, user list + add-user form (duplicate email validation), items list, link to player. Full brand styling applied.
