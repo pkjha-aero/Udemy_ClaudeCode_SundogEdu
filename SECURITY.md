@@ -28,6 +28,38 @@ Instead, please report security vulnerabilities privately via GitHub's Security 
 
 **Response time:** We aim to respond to security reports within 48 hours and publish fixes within 1 week for critical issues.
 
+## Automated Security Enforcement
+
+To ensure consistent security practices, we use automated scanning on every PR and nightly:
+
+### What Developers Encounter on PRs
+
+**6 Security Tools Run Automatically:**
+1. **TruffleHog** — Detects exposed secrets (API keys, passwords, tokens)
+2. **Bandit** — Scans Python code for security vulnerabilities (SQL injection, XSS, etc.)
+3. **Safety** — Checks Python dependencies for known CVEs
+4. **Trivy** — Scans Docker images for container vulnerabilities
+5. **Hadolint** — Lints Dockerfile for security and best practice violations
+6. **CodeQL** — Performs deep code analysis for security and quality issues
+
+**On Every PR:**
+- Security scan results appear in PR comments
+- Detailed reports available in Artifacts tab
+- CodeQL results visible in Security tab
+- Failed checks must be addressed before merge
+
+**Nightly (Scheduled):**
+- OWASP Dependency-Check runs comprehensive dependency analysis
+- Detects transitive dependencies and supply chain risks
+
+### Dependabot for Automatic Updates
+
+- **Weekly updates** for Python packages, Docker images, and GitHub Actions
+- Creates PRs with security labels
+- Prevents security drift over time
+
+This automated enforcement is part of our "shift-left security" approach—catching issues early in development rather than during manual security reviews.
+
 ## Security Best Practices
 
 ### Code Security

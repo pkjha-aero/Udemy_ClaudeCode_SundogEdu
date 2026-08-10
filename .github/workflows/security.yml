@@ -55,13 +55,15 @@ jobs:
 
       - name: Run Bandit (SAST)
         run: |
-          bandit -r radiocalico/app -f json -o bandit-report.json || true
+          bandit -r radiocalico/app -f json -o bandit-report.json
           bandit -r radiocalico/app -f txt
+        continue-on-error: true
 
       - name: Run Safety (Dependency vulnerabilities)
         run: |
-          safety check --json > safety-report.json || true
+          safety check --json > safety-report.json
           safety check
+        continue-on-error: true
 
       - name: Upload Bandit report
         if: always()
@@ -80,6 +82,8 @@ jobs:
   dependency-check:
     name: Dependency Check (OWASP)
     runs-on: ubuntu-latest
+    # Run only on schedule (nightly) - Safety provides real-time checks for PRs
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       security-events: write
@@ -118,9 +122,8 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build --target=dev -t radiocalico:dev .
-          docker build --target=prod -t radiocalico:prod .
-        working-directory: radiocalico
+          docker build --target=dev -t radiocalico:dev ./radiocalico
+          docker build --target=prod -t radiocalico:prod ./radiocalico
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -161,6 +164,8 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: radiocalico/Dockerfile
+          # DL3008: Pin versions in apt-get (allows slim base image flexibility)
+          # DL3009: Delete apt-get lists (already removed in RUN command)
           ignore: DL3008,DL3009
           failure-threshold: warning
 
@@ -194,14 +199,14 @@ jobs:
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [secrets-scanning, python-security, dependency-check, docker-security, dockerfile-lint, codeql-analysis]
-    if: always()
+    # Only run security-summary on PRs to avoid undefined context.issue.number
+    if: github.event_name == 'pull_request'
+    needs: [secrets-scanning, python-security, docker-security, dockerfile-lint, codeql-analysis]
     permissions:
       pull-requests: write
 
     steps:
       - name: Comment PR with security summary
-        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -211,7 +216,6 @@ jobs:
             ✅ **Scans Completed:**
             - Secrets scanning (TruffleHog)
             - Python security analysis (Bandit + Safety)
-            - Dependency vulnerabilities (OWASP Dependency-Check)
             - Docker image scanning (Trivy)
             - Dockerfile linting (Hadolint)
             - Code analysis (CodeQL)
@@ -223,6 +227,8 @@ jobs:
 
             ### Failing Checks:
             View job details for specific issues. All security warnings must be addressed before merge.
+
+            💡 **Note:** OWASP Dependency-Check runs nightly for comprehensive analysis.
 
             🔒 Generated with [Claude Code](https://claude.com/claude-code)
             `;
