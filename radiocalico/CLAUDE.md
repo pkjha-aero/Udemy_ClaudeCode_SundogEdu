@@ -125,7 +125,11 @@ For convenience, use `make` to manage the project:
 - `make setup` — Install dependencies in virtual environment
 
 **Production:**
-- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80)
+- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) **Requires DB_PASSWORD env var**
+  ```bash
+  export DB_PASSWORD=$(openssl rand -base64 32)
+  make prod
+  ```
 - `make prod-build` — Build production Docker images
 - `make prod-stop` — Stop production stack
 
@@ -286,7 +290,7 @@ Runs Python security analysis locally without Docker. Installs Bandit (SAST) and
 ```bash
 make security-docker
 ```
-Attempts to run the same tools as GitHub Actions (Trivy, Hadolint, etc.). Requires optional tools to be installed locally (see output for installation commands).
+Runs Trivy and Hadolint in Docker containers (no local installation needed). Scans Docker images for CVEs and validates Dockerfile best practices.
 
 **Common workflows:**
 ```bash
@@ -295,20 +299,111 @@ make clean && make security       # Clean environment, then scan
 make build && make security-docker # Build images, then scan containers
 ```
 
-**What gets checked:**
-| Target | Tools | Checks |
-|--------|-------|--------|
-| `make security` | Bandit, Safety | Python code vulnerabilities, known CVEs in dependencies |
-| `make security-docker` | Trivy, Hadolint | Docker image CVEs, Dockerfile best practices |
-| GitHub Actions (PR) | All 7 tools | Secrets, code quality, images, dependencies (comprehensive) |
-| GitHub Actions (nightly) | OWASP | Deep dependency analysis, transitive vulnerabilities |
+### Local Make vs GitHub Actions Security Workflows
+
+**Important:** Local `make security` targets and GitHub Actions workflows are **separate but complementary** — they do NOT call each other.
+
+#### Local Development (`make security` / `make security-docker`)
+
+**Purpose:** Rapid feedback for developers before pushing
+
+**Tools invoked directly by Makefile:**
+- `make security` → Bandit (Python SAST) + Safety (dependencies)
+- `make security-docker` → Trivy (image scanning) + Hadolint (Dockerfile linting)
+
+**Workflow:** Developer runs locally → sees output in terminal → fixes issues → commits → pushes PR
+
+**Advantages:**
+- ✅ Fast feedback loop (seconds)
+- ✅ No network calls to GitHub
+- ✅ Local debugging and iteration
+- ✅ Works offline
+
+#### CI/CD Security Scanning (`.github/workflows/security.yml` / `scorecard.yml`)
+
+**Purpose:** Comprehensive automated security checks on every PR and schedule
+
+**Tools invoked directly by GitHub Actions (NOT via make targets):**
+- TruffleHog → Secrets scanning
+- Bandit → Python SAST (via workflow, not `make security`)
+- Safety → Dependency vulnerabilities (via workflow)
+- Trivy → Docker image scanning (via GitHub Action, not `make security-docker`)
+- Hadolint → Dockerfile linting (via GitHub Action)
+- CodeQL → Code analysis
+- OpenSSF Scorecard → Security best practices assessment
+
+**Workflow:** Developer pushes PR → GitHub runs 7 security tools → results appear in Security tab + PR comments → developer fixes findings → reruns workflows
+
+**Advantages:**
+- ✅ 7 comprehensive tools (vs 2-4 locally)
+- ✅ Automated SARIF upload to Security tab
+- ✅ PR comments with summaries
+- ✅ Artifact storage for reports
+- ✅ Secrets scanning (not in local make targets)
+- ✅ Fresh environment (no local configuration drift)
+
+#### Comparison Table
+
+| Aspect | `make security` | `make security-docker` | GitHub Actions |
+|--------|---|---|---|
+| **When** | Local development | Local development | Every PR + schedule |
+| **Tools** | Bandit, Safety | Trivy, Hadolint | All 7 tools |
+| **Speed** | ~5-10 seconds | ~30-60 seconds | ~2-3 minutes |
+| **Setup Required** | Python venv | Docker only | None (runs on GitHub) |
+| **SARIF/Reports** | Local files only | Local files only | ✅ Uploaded to GitHub Security tab |
+| **Secrets Scanning** | ❌ Not included | ❌ Not included | ✅ TruffleHog |
+| **Code Analysis** | ❌ Not included | ❌ Not included | ✅ CodeQL |
+| **Best Practices** | ❌ Not included | ❌ Not included | ✅ OpenSSF Scorecard |
+
+#### Recommended Workflow
+
+```
+1. Before pushing:
+   make test && make security              # Run local Python checks
+   
+2. After pushing PR:
+   GitHub Actions runs automatically        # 7 comprehensive tools
+   
+3. Review results:
+   - Terminal: Local findings
+   - GitHub Security tab: Comprehensive results
+   - GitHub PR comments: Summary + artifacts
+   
+4. Fix findings:
+   Update code/dependencies
+   Commit and push (workflow reruns)
+   
+5. Merge:
+   All security checks pass → ready to merge
+```
+
+#### Why They're Separate (Not Consolidated)
+
+GitHub Actions workflows do NOT call `make security` because:
+
+1. **GitHub integration benefits lost** — Direct tool invocation enables:
+   - Automatic SARIF upload to Security tab
+   - Fine-grained artifact handling
+   - Workflow-specific report formatting
+   - Per-tool result aggregation
+
+2. **Explicit CI/CD logic** — Workflows show exactly what runs in CI/CD:
+   - No hidden dependencies on Makefile
+   - Easy to modify without breaking local development
+   - Clear separation of concerns
+
+3. **Different tool versions** — GitHub Actions can pin specific tool versions independently:
+   - Security tools update frequently
+   - Local and CI/CD can use different versions if needed
+   - No version conflicts between environments
 
 **Fixing security issues:**
-1. Run `make security` to identify local issues
-2. Fix issues in code or update dependencies
-3. Push a PR to run full GitHub Actions security suite
-4. Address any remaining findings before merge
-5. Dependabot PRs keep dependencies patched
+1. Run `make security` locally to identify Python issues
+2. Run `make security-docker` locally to check Docker issues
+3. Fix issues in code or update dependencies
+4. Push PR to trigger full GitHub Actions security suite (7 tools)
+5. Address any additional findings from CodeQL/TruffleHog/Scorecard
+6. Merge when all checks pass
 
 ## Current state
 
@@ -324,10 +419,33 @@ make build && make security-docker # Build images, then scan containers
 - Configure via `DB_PASSWORD` environment variable (defaults to "radiocalico")
 - Connection string: `postgresql://radiocalico:password@postgres:5432/radiocalico`
 
+**⚠️ SECURITY: Database Password**
+
+The default password `radiocalico` is **ONLY for development**. For production:
+
+```bash
+# Generate a secure password (minimum 32 characters)
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this password securely: $DB_PASSWORD"
+
+# Or use Python
+export DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# Start production with secure password
+docker compose -f docker-compose.prod.yml up -d
+```
+
 **Services**:
 - Flask + Gunicorn: Application server on port 5000 (internal)
 - PostgreSQL: Database server on port 5432 (internal)
 - Nginx: Reverse proxy on port 80 (external)
+
+**Security Features**:
+- ✅ CSRF protection enabled (Flask-WTF)
+- ✅ Nginx security headers (X-Frame-Options, X-XSS-Protection, etc.)
+- ✅ Rate limiting (10 req/s general, 100 req/s API)
+- ✅ Non-root container execution (UID 1000)
+- ✅ Health checks with automatic restart
 
 **Health Checks**:
 - PostgreSQL: `pg_isready` check every 10s
@@ -335,8 +453,8 @@ make build && make security-docker # Build images, then scan containers
 
 **Startup**:
 ```bash
-# Set custom password (optional, defaults to "radiocalico")
-export DB_PASSWORD=your_secure_password
+# Set secure password BEFORE starting (see ⚠️ SECURITY above)
+export DB_PASSWORD=$(openssl rand -base64 32)
 
 # Start production stack
 docker compose -f docker-compose.prod.yml up -d
@@ -347,3 +465,232 @@ docker compose -f docker-compose.prod.yml up -d
 - Run `docker compose -f docker-compose.prod.yml ps` to verify all services are healthy
 
 See `docker_doc/DOCKER.md` for complete production setup and configuration guide.
+
+## Troubleshooting Docker Issues
+
+### Problem: `ModuleNotFoundError: No module named 'flask_wtf'` (or other imports)
+
+**Symptoms:**
+- Container exits immediately with import error
+- `make dev` or `make prod` shows: `ModuleNotFoundError: No module named 'X'`
+- Error appears in first few lines of container startup
+
+**Root Cause:** 
+Docker image was built before new dependencies were added to `requirements.txt`
+
+**Solution:**
+
+**Step 1: Identify which mode has the issue**
+```bash
+# For development issues:
+make dev
+# Look for ModuleNotFoundError in output
+
+# For production issues:
+make prod
+# Check logs: docker compose -f docker-compose.prod.yml logs radiocalico
+```
+
+**Step 2: Rebuild the appropriate Docker image**
+```bash
+# For development:
+docker build --target=dev -t radiocalico:dev .
+# Or use make:
+make build-dev
+
+# For production:
+docker build --target=prod -t radiocalico:prod .
+# Or use make:
+make prod-build
+
+# Or rebuild both (recommended):
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make:
+make build
+```
+
+**Step 3: Restart the service**
+```bash
+# For development:
+make dev-clean
+
+# For production:
+make prod-stop
+make prod
+```
+
+**When This Happens:**
+- After adding new packages to `requirements.txt`
+- After switching branches with different dependencies
+- After pulling changes that update dependencies
+
+---
+
+### Problem: `502 Bad Gateway` or `password authentication failed`
+
+**Symptoms:**
+- Website shows: 502 Bad Gateway
+- Logs show: `FATAL: password authentication failed for user "radiocalico"`
+- PostgreSQL container is running but Flask can't connect
+
+**Root Causes:**
+1. Stale PostgreSQL volume with old password
+2. DB_PASSWORD not set when starting production
+3. Flask image missing dependencies
+
+**Solution:**
+
+**For password authentication failures:**
+
+```bash
+# Step 1: Stop production
+docker compose -f docker-compose.prod.yml down
+# Or use make:
+make prod-stop
+
+# Step 2: Remove stale database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Step 3: Set secure password
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this: $DB_PASSWORD"
+
+# Step 4: Restart production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
+
+# Step 5: Verify it works (wait 5-10 seconds for PostgreSQL to initialize)
+sleep 8
+curl http://localhost/api/health
+# Should return: {"status":"ok"}
+```
+
+**For missing dependency errors (Flask won't start):**
+- Follow the "ModuleNotFoundError" solution above
+- Also run the password solution above
+
+---
+
+### Problem: `Connection refused` when Flask starts
+
+**Symptoms:**
+- Flask starts but can't connect to PostgreSQL
+- Error: `connection to server at "postgres" ... failed: Connection refused`
+- Happens immediately on startup
+
+**Root Cause:** 
+Race condition - Flask is starting before PostgreSQL is ready
+
+**Solution:**
+Just wait - PostgreSQL takes a few seconds to initialize:
+
+```bash
+# Wait 8-10 seconds for PostgreSQL health check to pass
+sleep 10
+
+# Then test health endpoint
+curl http://localhost/api/health
+# Or use make:
+make health
+```
+
+If it persists after 30 seconds, check PostgreSQL logs:
+```bash
+docker compose -f docker-compose.prod.yml logs postgres
+```
+
+---
+
+### Problem: Port already in use
+
+**Symptoms:**
+- Error: `bind: address already in use`
+- Can't start `make dev` or `make prod`
+
+**Solution:**
+```bash
+# Stop all containers
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
+make stop
+
+# Kill any lingering containers (if needed)
+docker kill $(docker ps -q) 2>/dev/null || true
+
+# Remove all containers (if needed)
+docker rm $(docker ps -a -q) 2>/dev/null || true
+
+# Restart
+make dev   # or make prod
+```
+
+---
+
+### Quick Troubleshooting Checklist
+
+When **any** Docker issue occurs:
+
+```bash
+# 1. Check if containers are running
+docker compose -f docker-compose.prod.yml ps
+# Or use make:
+make status
+
+# 2. View recent logs
+docker compose -f docker-compose.prod.yml logs -f radiocalico
+# Or use make:
+make logs-prod
+
+# 3. If import error → rebuild image
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
+make build
+
+# 4. If password error → remove volume and restart
+docker volume rm radiocalico_radiocalico-db
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+# (remove volume manually, then:)
+make prod
+
+# 5. If connection error → wait for PostgreSQL
+sleep 10 && curl http://localhost/api/health
+# Or use make:
+sleep 10 && make health
+
+# 6. If still failing → full reset
+docker compose down && docker compose -f docker-compose.prod.yml down
+docker volume rm radiocalico_radiocalico-db
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
+make clean
+docker volume rm radiocalico_radiocalico-db
+make build
+export DB_PASSWORD=$(openssl rand -base64 32)
+make prod
+```
+
+---
+
+### Common Docker Commands for Debugging
+
+```bash
+# View all container logs
+docker compose -f docker-compose.prod.yml logs radiocalico  # Last 100 lines
+docker compose -f docker-compose.prod.yml logs -f radiocalico  # Follow logs
+
+# Check container status
+docker ps -a
+docker compose -f docker-compose.prod.yml ps
+
+# View environment variables in running container
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep DB
+
+# Test database connection from Flask container
+docker compose -f docker-compose.prod.yml exec radiocalico python -c \
+  "import psycopg2; conn = psycopg2.connect('postgresql://radiocalico:password@postgres:5432/radiocalico'); print('Connected!')"
+
+# Check PostgreSQL is accepting connections
+docker compose -f docker-compose.prod.yml exec postgres pg_isready -U radiocalico
+```

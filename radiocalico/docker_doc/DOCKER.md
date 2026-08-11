@@ -86,16 +86,24 @@ Both URLs are equivalent on your local machine. Use whichever you prefer.
 
 ### Production Mode (with Nginx)
 
-```bash
-# Option 1: Using provided script
-./docker-run.sh prod
+⚠️ **REQUIRED: Set DB_PASSWORD environment variable BEFORE starting**
 
-# Option 2: Using docker compose directly
+```bash
+# STEP 1: Generate a secure password (MUST DO THIS)
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this password securely: $DB_PASSWORD"
+
+# STEP 2: Verify password is set
+echo $DB_PASSWORD  # Should output your secure password, NOT empty
+
+# STEP 3: Start production stack
+# Option A: Using docker compose directly (requires DB_PASSWORD exported)
 docker compose -f docker-compose.prod.yml up -d
 
-# Option 3: Building first, then running
-docker build --target=prod -t radiocalico:prod .
-docker run -d -p 80:80 radiocalico:prod
+# Option B: Using .env file (copy .env.production.example)
+cp .env.production.example .env.production
+# Edit .env.production and set DB_PASSWORD
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
 **Access**: 
@@ -276,6 +284,48 @@ docker rm radiocalico
 - User: `radiocalico`
 - Password: Set via `DB_PASSWORD` env var (defaults to `radiocalico`)
 - Connection: `postgresql://radiocalico:password@postgres:5432/radiocalico`
+
+⚠️ **SECURITY WARNING: Production Database Password**
+
+The default password `radiocalico` is suitable **only for development and testing**. For production deployments, you **MUST** set a strong password via the `DB_PASSWORD` environment variable.
+
+**Generate a secure password:**
+```bash
+# Option 1: Using OpenSSL (Linux/macOS)
+export DB_PASSWORD=$(openssl rand -base64 32)
+
+# Option 2: Using Python
+export DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# Option 3: Manually (minimum 32 characters, mix of upper/lower/numbers/special chars)
+export DB_PASSWORD="YourV3ryStr0ng!P@ssw0rd#WithSpecialChars"
+```
+
+**Start production with secure password:**
+```bash
+# Before starting, set the password
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Using DB_PASSWORD: $DB_PASSWORD"  # Save this somewhere safe!
+
+# Now start production
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Store the password securely:**
+- Do NOT commit `.env` files to git (they're in `.gitignore`)
+- Use your infrastructure's secret management (e.g., AWS Secrets Manager, HashiCorp Vault)
+- For self-hosted, use a `.env.production` file (gitignored) accessible only to deployment scripts
+- Consider Docker Secrets or Kubernetes Secrets if using orchestration
+
+**Verify the connection works:**
+```bash
+# Check if PostgreSQL is healthy
+docker compose -f docker-compose.prod.yml ps
+
+# Test the Flask app can connect to PostgreSQL
+curl http://localhost/api/health
+# Should return: {"status":"ok"}
+```
 
 **Changing Password**:
 ```bash
@@ -616,10 +666,347 @@ docker run --rm -v radiocalico_radiocalico-data:/data \
 - [Nginx Documentation](https://nginx.org/en/docs/)
 - [Flask Documentation](https://flask.palletsprojects.com/)
 
+## Troubleshooting
+
+### Issue: Container exits immediately with import error
+
+**Error message:**
+```
+ModuleNotFoundError: No module named 'flask_wtf'
+```
+
+**Cause:** 
+Docker image was built before new dependencies were added to `requirements.txt`
+
+**Fix:**
+```bash
+# Rebuild the affected image
+docker build --target=dev -t radiocalico:dev .    # For dev only
+# Or use make:
+make build-dev
+
+docker build --target=prod -t radiocalico:prod .  # For prod only
+# Or use make:
+make prod-build
+
+# Rebuild both (recommended):
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
+make build
+```
+
+---
+
+### Issue: 502 Bad Gateway or password authentication failed
+
+**Error message:**
+```
+FATAL: password authentication failed for user "radiocalico"
+```
+
+**Cause:**
+- PostgreSQL volume was initialized with a different password
+- Flask and PostgreSQL passwords don't match
+
+**Fix:**
+```bash
+# Stop services
+docker compose -f docker-compose.prod.yml down
+# Or use make:
+make prod-stop
+
+# Remove stale database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Set secure password and restart
+export DB_PASSWORD=$(openssl rand -base64 32)
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
+
+# Wait for PostgreSQL to initialize (8-10 seconds)
+sleep 10
+
+# Verify it works
+curl http://localhost/api/health
+# Or use make:
+make health
+# Should return: {"status":"ok"}
+```
+
+---
+
+### Issue: Connection refused on startup
+
+**Error message:**
+```
+connection to server at "postgres" failed: Connection refused
+```
+
+**Cause:**
+Race condition - Flask starts before PostgreSQL is ready
+
+**Fix:**
+Just wait for PostgreSQL to be ready:
+```bash
+# PostgreSQL health check needs 5-10 seconds
+sleep 10
+curl http://localhost/api/health
+```
+
+If it persists after 30 seconds, check PostgreSQL logs:
+```bash
+docker compose -f docker-compose.prod.yml logs postgres
+# Or use make:
+make logs-prod
+# (then look for postgres service logs)
+```
+
+---
+
+### Issue: Port already in use
+
+**Error message:**
+```
+bind: address already in use
+```
+
+**Cause:**
+Another process is using port 5000 (dev) or 80 (prod)
+
+**Fix:**
+```bash
+# Stop all containers and clean up
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
+make stop
+
+# Kill any lingering processes (if needed)
+docker kill $(docker ps -q) 2>/dev/null || true
+
+# Restart development
+docker compose up
+# Or use make:
+make dev
+
+# Or restart production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
+```
+
+---
+
+### Issue: Database volume out of sync
+
+**Symptoms:**
+- Changes to code don't reflect in database
+- Schema mismatches
+- Stale data from previous runs
+
+**Fix:**
+```bash
+# Stop services
+docker compose down
+# Or use make:
+make dev-stop
+
+# For production:
+docker compose -f docker-compose.prod.yml down
+# Or use make:
+make prod-stop
+
+# Remove database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Restart - database will be fresh with new initialization
+docker compose up
+# Or use make:
+make dev
+
+# Or for production:
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
+```
+
+---
+
+### Issue: Can't connect to container
+
+**Error message:**
+```
+Error: No such container
+```
+
+**Cause:**
+Container doesn't exist or has different name
+
+**Fix:**
+```bash
+# List all containers
+docker ps -a
+
+# Check compose status
+docker compose ps
+# Or use make:
+make status
+
+# Check production status
+docker compose -f docker-compose.prod.yml ps
+# Or use make:
+make status
+
+# Restart containers (development)
+docker compose up
+# Or use make:
+make dev
+
+# Or restart production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
+```
+
+---
+
+### Debugging Commands
+
+**View container logs:**
+```bash
+# Development
+docker compose logs -f radiocalico-dev
+# Or use make:
+make logs-dev
+
+# Production (Flask)
+docker compose -f docker-compose.prod.yml logs -f radiocalico
+# Or use make:
+make logs-prod
+
+# Production (PostgreSQL)
+docker compose -f docker-compose.prod.yml logs -f postgres
+
+# Production (Nginx)
+docker compose -f docker-compose.prod.yml logs -f nginx
+```
+
+**Check environment variables:**
+```bash
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep DB
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep FLASK
+```
+
+**Test database connectivity:**
+```bash
+# From Flask container
+docker compose -f docker-compose.prod.yml exec radiocalico python -c \
+  "from app import create_app; app = create_app(); print('✅ Database connected')"
+
+# From PostgreSQL container
+docker compose -f docker-compose.prod.yml exec postgres pg_isready -U radiocalico
+```
+
+**Inspect volumes:**
+```bash
+# List all volumes
+docker volume ls | grep radiocalico
+
+# Inspect volume details
+docker volume inspect radiocalico_radiocalico-db
+```
+
+**Full reset (nuclear option):**
+```bash
+# Stop everything
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
+make stop
+
+# Remove all volumes
+docker volume rm radiocalico_radiocalico-db
+
+# Remove all images
+docker rmi radiocalico:dev radiocalico:prod
+
+# Remove all stopped containers
+docker container prune
+
+# Start fresh - rebuild images
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make:
+make build
+
+# Start development
+docker compose up
+# Or use make:
+make dev
+
+# Or start production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make (don't forget to set DB_PASSWORD first):
+export DB_PASSWORD=$(openssl rand -base64 32)
+make prod
+```
+
+---
+
+### When to Rebuild Docker Images
+
+Rebuild Docker images when:
+- ✅ Dependencies in `requirements.txt` change (new/updated packages)
+- ✅ Python version changes in Dockerfile
+- ✅ System packages change (apt-get packages)
+- ✅ Base image (Python version) changes
+- ✅ After switching git branches with different dependencies
+
+**Rebuild command:**
+```bash
+# Rebuild both (recommended)
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
+make build
+
+# Or rebuild specific target
+docker build --target=dev -t radiocalico:dev .
+# Or use make:
+make build-dev
+
+# Or for production
+docker build --target=prod -t radiocalico:prod .
+# Or use make:
+make prod-build
+```
+
+---
+
+### When to Remove Volumes
+
+Remove database volumes when:
+- ✅ Password changes (DB_PASSWORD)
+- ✅ Starting with a clean database
+- ✅ Testing database initialization
+- ✅ Previous initialization failed
+
+**Remove command:**
+```bash
+docker volume rm radiocalico_radiocalico-db
+# Note: After removing, restart with:
+# make prod (for production)
+# or
+# make dev (for development)
+```
+
+---
+
 ## Support
 
 For issues or questions:
-1. Check logs: `docker compose logs -f`
-2. Review this guide's Troubleshooting section
+1. Check the Troubleshooting section above
+2. View logs: `docker compose logs -f`
 3. Check Docker documentation
-4. Open an issue on GitHub
+4. Open an issue on GitHub with:
+   - Error message (full output)
+   - Steps to reproduce
+   - Docker version: `docker --version`
+   - Docker Compose version: `docker compose --version`
