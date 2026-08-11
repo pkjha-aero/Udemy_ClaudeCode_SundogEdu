@@ -137,7 +137,7 @@ security: ## Run local security analysis (Bandit, Safety)
 	@echo "$(BLUE)🔐 Running local security analysis...$(NC)"
 	@echo ""
 	@echo "$(BLUE)Installing security tools...$(NC)"
-	$(PIP) install --upgrade bandit safety
+	$(PYTHON) -m pip install --upgrade bandit safety
 	@echo ""
 	@echo "$(BLUE)Running Bandit (Python SAST)...$(NC)"
 	$(PYTHON) -m bandit -r app -f csv -o /tmp/bandit-report.csv
