@@ -152,7 +152,8 @@ This automated enforcement is part of our "shift-left security" approach—catch
 - No secrets committed to repo
 - Dependabot secrets scanning enabled
 - GitHub Actions use environment variables only
-- Production passwords via env vars
+- Production passwords via env vars (required, no defaults)
+- `.env.production.example` template for guidance (actual `.env` files gitignored)
 
 ## Deployment Security
 

@@ -86,16 +86,24 @@ Both URLs are equivalent on your local machine. Use whichever you prefer.
 
 ### Production Mode (with Nginx)
 
-```bash
-# Option 1: Using provided script
-./docker-run.sh prod
+⚠️ **REQUIRED: Set DB_PASSWORD environment variable BEFORE starting**
 
-# Option 2: Using docker compose directly
+```bash
+# STEP 1: Generate a secure password (MUST DO THIS)
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this password securely: $DB_PASSWORD"
+
+# STEP 2: Verify password is set
+echo $DB_PASSWORD  # Should output your secure password, NOT empty
+
+# STEP 3: Start production stack
+# Option A: Using docker compose directly (requires DB_PASSWORD exported)
 docker compose -f docker-compose.prod.yml up -d
 
-# Option 3: Building first, then running
-docker build --target=prod -t radiocalico:prod .
-docker run -d -p 80:80 radiocalico:prod
+# Option B: Using .env file (copy .env.production.example)
+cp .env.production.example .env.production
+# Edit .env.production and set DB_PASSWORD
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
 **Access**: 
