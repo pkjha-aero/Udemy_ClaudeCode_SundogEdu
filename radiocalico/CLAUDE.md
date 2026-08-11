@@ -125,7 +125,11 @@ For convenience, use `make` to manage the project:
 - `make setup` — Install dependencies in virtual environment
 
 **Production:**
-- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80)
+- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) **Requires DB_PASSWORD env var**
+  ```bash
+  export DB_PASSWORD=$(openssl rand -base64 32)
+  make prod
+  ```
 - `make prod-build` — Build production Docker images
 - `make prod-stop` — Stop production stack
 
