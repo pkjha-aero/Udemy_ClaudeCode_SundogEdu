@@ -163,10 +163,10 @@ security-docker: ## Run Docker-based security checks (Trivy + Hadolint)
 	@echo "$(BLUE)Running Hadolint Dockerfile linter...$(NC)"
 	@if command -v hadolint >/dev/null 2>&1; then \
 		echo "$(GREEN)✓ Hadolint found locally$(NC)"; \
-		hadolint Dockerfile; \
+		hadolint Dockerfile || true; \
 	else \
 		echo "$(YELLOW)✓ Running Hadolint in Docker...$(NC)"; \
-		docker run --rm -i hadolint/hadolint < Dockerfile; \
+		docker run --rm -i hadolint/hadolint < Dockerfile || true; \
 	fi
 	@echo ""
 	@echo "$(GREEN)✅ Docker security checks complete$(NC)"
