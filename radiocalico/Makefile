@@ -6,6 +6,7 @@ PYTHON := $(VENV_DIR)/bin/python
 PIP := $(VENV_DIR)/bin/pip
 DOCKER_COMPOSE_DEV := docker compose
 DOCKER_COMPOSE_PROD := docker compose -f docker-compose.prod.yml
+DB_PASSWORD_ENV := $(shell echo $$DB_PASSWORD)
 
 # Colors for output
 BLUE := \033[0;34m
@@ -84,7 +85,7 @@ dev-stop: ## Stop development container
 ## Production Mode
 
 prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
-	@if [ -z "$$DB_PASSWORD" ]; then \
+	@if [ -z "$(DB_PASSWORD_ENV)" ]; then \
 		echo "$(YELLOW)❌ ERROR: DB_PASSWORD environment variable is required for production!$(NC)"; \
 		echo ""; \
 		echo "Set a secure password before starting:"; \
