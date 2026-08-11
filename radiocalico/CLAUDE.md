@@ -133,6 +133,11 @@ For convenience, use `make` to manage the project:
 - `make test` — Run all tests with pytest
 - `make test-coverage` — Run tests with HTML coverage report
 - `make test-specific TEST=tests/test_api.py` — Run specific test file
+- `make test-watch` — Run tests in watch mode (requires pytest-watch)
+
+**Security:**
+- `make security` — Run local security analysis (Bandit SAST + Safety dependency check)
+- `make security-docker` — Run full security stack (includes Trivy + Hadolint checks)
 
 **Utilities:**
 - `make build` — Build all Docker images
@@ -230,6 +235,79 @@ The repository includes AI-powered automation using Claude Haiku 4.5 for cost-ef
 - Sufficient for all automation tasks: code quality, classification, analysis
 - Faster responses (better for CI/CD workflows)
 - Can upgrade to Opus 5 for complex architectural reviews
+
+## Security
+
+**Comprehensive Security Scanning** (`.github/workflows/security.yml`):
+- **Secrets Scanning** — TruffleHog detects exposed credentials and tokens
+- **Python SAST** — Bandit identifies code vulnerabilities (SQL injection, XSS, etc.)
+- **Dependency Scanning** — Safety checks for known vulnerabilities in packages
+- **Container Scanning** — Trivy scans Docker images for CVEs
+- **Dockerfile Linting** — Hadolint enforces security best practices
+- **Code Analysis** — CodeQL performs advanced static analysis
+- **Runs** — Every PR + daily schedule (via `schedule` trigger)
+
+**Automated Dependency Updates** (`.github/dependabot.yml`):
+- Weekly Python package updates (from `requirements.txt`)
+- Weekly Docker base image updates (python, postgres, nginx)
+- Weekly GitHub Actions updates
+- Creates PRs with security/dependency labels for review
+
+**Docker Security:**
+- Non-root execution (UID 1000)
+- Minimal images (slim, alpine variants)
+- Health checks for automatic container restart
+- No secrets in images (env vars only)
+
+**Application Security:**
+- SQLAlchemy ORM prevents SQL injection
+- Jinja2 template auto-escaping prevents XSS
+- Nginx security headers (X-Frame-Options, X-XSS-Protection, etc.)
+- Rate limiting (10 req/s general, 100 req/s API)
+- CORS configured appropriately
+
+**Vulnerability Disclosure:**
+See [SECURITY.md](../SECURITY.md) for:
+- Security policy and contact information
+- Vulnerability reporting process
+- Known limitations and considerations
+- Security checklist for contributors
+
+### Running Security Checks Locally
+
+**Quick security scan** (Bandit + Safety):
+```bash
+make security
+```
+Runs Python security analysis locally without Docker. Installs Bandit (SAST) and Safety (dependency check) and reports vulnerabilities. Outputs CSV report to `/tmp/bandit-report.csv`.
+
+**Full security stack** (simulates CI/CD):
+```bash
+make security-docker
+```
+Attempts to run the same tools as GitHub Actions (Trivy, Hadolint, etc.). Requires optional tools to be installed locally (see output for installation commands).
+
+**Common workflows:**
+```bash
+make test && make security        # Test code, then verify security
+make clean && make security       # Clean environment, then scan
+make build && make security-docker # Build images, then scan containers
+```
+
+**What gets checked:**
+| Target | Tools | Checks |
+|--------|-------|--------|
+| `make security` | Bandit, Safety | Python code vulnerabilities, known CVEs in dependencies |
+| `make security-docker` | Trivy, Hadolint | Docker image CVEs, Dockerfile best practices |
+| GitHub Actions (PR) | All 7 tools | Secrets, code quality, images, dependencies (comprehensive) |
+| GitHub Actions (nightly) | OWASP | Deep dependency analysis, transitive vulnerabilities |
+
+**Fixing security issues:**
+1. Run `make security` to identify local issues
+2. Fix issues in code or update dependencies
+3. Push a PR to run full GitHub Actions security suite
+4. Address any remaining findings before merge
+5. Dependabot PRs keep dependencies patched
 
 ## Current state
 

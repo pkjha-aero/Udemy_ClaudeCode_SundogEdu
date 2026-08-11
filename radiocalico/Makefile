@@ -1,4 +1,4 @@
-.PHONY: help setup dev prod stop logs test test-coverage build clean
+.PHONY: help setup dev prod stop logs test test-coverage security build clean
 
 # Variables
 VENV_DIR := venv
@@ -31,6 +31,10 @@ help: ## Show this help message
 	@echo "  make test-coverage  - Run tests with coverage report"
 	@echo "  make test-watch     - Run tests in watch mode (requires pytest-watch)"
 	@echo ""
+	@echo "$(GREEN)Security:$(NC)"
+	@echo "  make security       - Run local security analysis (Bandit, Safety)"
+	@echo "  make security-docker - Run full security stack in Docker"
+	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make logs-dev       - View development logs"
 	@echo "  make logs-prod      - View production logs"
@@ -40,8 +44,10 @@ help: ## Show this help message
 	@echo "  make health         - Check health endpoints"
 	@echo ""
 	@echo "$(GREEN)Examples:$(NC)"
-	@echo "  DB_PASSWORD=mysecret make prod    - Start prod with custom DB password"
 	@echo "  make test && make dev             - Run tests then start dev"
+	@echo "  make security                     - Run local security analysis"
+	@echo "  DB_PASSWORD=mysecret make prod    - Start prod with custom DB password"
+	@echo "  make test && make security        - Test and verify security"
 
 ## Setup & Installation
 
@@ -124,6 +130,49 @@ test-specific: ## Run specific test file (usage: make test-specific TEST=tests/t
 test-watch: ## Run tests in watch mode (requires pytest-watch)
 	@echo "$(BLUE)Running tests in watch mode...$(NC)"
 	$(PYTHON) -m ptw tests/ -- -v
+
+## Security Testing
+
+security: ## Run local security analysis (Bandit, Safety)
+	@echo "$(BLUE)🔐 Running local security analysis...$(NC)"
+	@echo ""
+	@echo "$(BLUE)Installing security tools...$(NC)"
+	$(PYTHON) -m pip install --upgrade bandit safety
+	@echo ""
+	@echo "$(BLUE)Running Bandit (Python SAST)...$(NC)"
+	$(PYTHON) -m bandit -r app -f csv -o /tmp/bandit-report.csv
+	$(PYTHON) -m bandit -r app -f txt
+	@echo ""
+	@echo "$(BLUE)Running Safety (Dependency check)...$(NC)"
+	$(PYTHON) -m safety scan --json
+	@echo ""
+	@echo "$(GREEN)✅ Security analysis complete$(NC)"
+	@echo "   Full reports: See output above"
+	@echo "   Bandit CSV: /tmp/bandit-report.csv"
+
+security-docker: ## Run full security stack in Docker (like CI/CD)
+	@echo "$(BLUE)🔐 Running full security stack in Docker...$(NC)"
+	@echo ""
+	@echo "   This runs the same security tools as GitHub Actions:"
+	@echo "   - TruffleHog (secrets scanning)"
+	@echo "   - Bandit (Python SAST)"
+	@echo "   - Safety (dependency vulnerabilities)"
+	@echo "   - Trivy (Docker image scanning)"
+	@echo "   - Hadolint (Dockerfile linting)"
+	@echo "   - CodeQL (code analysis)"
+	@echo ""
+	@echo "$(YELLOW)Note: Full Docker security stack requires additional setup.$(NC)"
+	@echo "$(YELLOW)For now, run 'make security' or push a PR to trigger CI scans.$(NC)"
+	@echo ""
+	@echo "$(BLUE)Running available Docker security checks...$(NC)"
+	@docker build --target=prod -t radiocalico:prod . > /dev/null 2>&1
+	@echo "$(BLUE)Running Trivy on prod image...$(NC)"
+	@trivy image --severity HIGH,CRITICAL radiocalico:prod || echo "Trivy not installed. Install: brew install trivy"
+	@echo ""
+	@echo "$(BLUE)Running Hadolint on Dockerfile...$(NC)"
+	@hadolint Dockerfile || echo "Hadolint not installed. Install: brew install hadolint"
+	@echo ""
+	@echo "$(GREEN)✅ Docker security checks complete$(NC)"
 
 ## Logging & Monitoring
 

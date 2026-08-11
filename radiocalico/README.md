@@ -39,17 +39,30 @@ Access the HLS radio player at: **http://127.0.0.1:5000/player**
 
 The SQLite database is created automatically at `instance/radiocalico.db` on first run.
 
-## CI/CD & Automation
+## Testing & Security
+
+**Run Tests Locally:**
+```bash
+make test              # Run unit tests (pytest)
+make test-coverage     # Generate coverage report
+make security          # Run security analysis (Bandit + Safety)
+```
 
 **Automated on Every PR:**
 - ✅ Unit tests (pytest, 88% coverage gate)
+- ✅ Security scanning (Bandit, Safety, Trivy, Hadolint, CodeQL, TruffleHog)
 - ✅ AI code review (Claude Haiku 4.5)
 - ✅ Docker build & smoke tests
 - ✅ Issue classification & analysis
 
+**Dependency Updates:**
+- Weekly automatic updates via Dependabot (Python packages, Docker images, GitHub Actions)
+- Nightly OWASP comprehensive dependency analysis
+
 **Local Commands:**
 - `make help` — Show all available targets
 - `make test-coverage` — Generate coverage report
+- `make security` — Run local security analysis
 - `make clean` — Clean up containers and cache
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [docker_doc/DOCKER.md](docker_doc/DOCKER.md) for containerization details.
+See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [SECURITY.md](../SECURITY.md) for security policies. See [docker_doc/DOCKER.md](docker_doc/DOCKER.md) for containerization details.
