@@ -144,7 +144,7 @@ security: ## Run local security analysis (Bandit, Safety)
 	$(PYTHON) -m bandit -r app -f txt
 	@echo ""
 	@echo "$(BLUE)Running Safety (Dependency check)...$(NC)"
-	$(PYTHON) -m safety check --json
+	$(PYTHON) -m safety scan --json
 	@echo ""
 	@echo "$(GREEN)✅ Security analysis complete$(NC)"
 	@echo "   Full reports: See output above"

@@ -61,8 +61,8 @@ jobs:
 
       - name: Run Safety (Dependency vulnerabilities)
         run: |
-          safety check --json > safety-report.json
-          safety check
+          safety scan --json > safety-report.json
+          safety scan
         continue-on-error: true
 
       - name: Upload Bandit report
