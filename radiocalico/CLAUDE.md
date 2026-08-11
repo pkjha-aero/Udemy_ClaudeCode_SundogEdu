@@ -238,14 +238,15 @@ The repository includes AI-powered automation using Claude Haiku 4.5 for cost-ef
 
 ## Security
 
-**Comprehensive Security Scanning** (`.github/workflows/security.yml`):
+**Comprehensive Security Scanning** (`.github/workflows/security.yml` and `.github/workflows/scorecard.yml`):
 - **Secrets Scanning** — TruffleHog detects exposed credentials and tokens
 - **Python SAST** — Bandit identifies code vulnerabilities (SQL injection, XSS, etc.)
 - **Dependency Scanning** — Safety checks for known vulnerabilities in packages
 - **Container Scanning** — Trivy scans Docker images for CVEs
 - **Dockerfile Linting** — Hadolint enforces security best practices
 - **Code Analysis** — CodeQL performs advanced static analysis
-- **Runs** — Every PR + daily schedule (via `schedule` trigger)
+- **Security Maturity** — OpenSSF Scorecard assesses repository best practices (SLSA alignment)
+- **Runs** — Every PR + daily schedule (via `schedule` trigger) + weekly scorecard
 
 **Automated Dependency Updates** (`.github/dependabot.yml`):
 - Weekly Python package updates (from `requirements.txt`)
