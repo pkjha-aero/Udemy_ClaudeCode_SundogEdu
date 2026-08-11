@@ -55,7 +55,7 @@ CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
 FROM base as prod
 
 # Install gunicorn (before switching to non-root user so pip works)
-RUN pip install --no-cache-dir gunicorn
+RUN pip install --no-cache-dir gunicorn==23.0.0
 
 # Copy app (excluding dev files)
 COPY --chown=1000:1000 app ./app
