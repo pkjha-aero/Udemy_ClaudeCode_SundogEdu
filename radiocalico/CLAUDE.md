@@ -415,10 +415,33 @@ GitHub Actions workflows do NOT call `make security` because:
 - Configure via `DB_PASSWORD` environment variable (defaults to "radiocalico")
 - Connection string: `postgresql://radiocalico:password@postgres:5432/radiocalico`
 
+**⚠️ SECURITY: Database Password**
+
+The default password `radiocalico` is **ONLY for development**. For production:
+
+```bash
+# Generate a secure password (minimum 32 characters)
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this password securely: $DB_PASSWORD"
+
+# Or use Python
+export DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# Start production with secure password
+docker compose -f docker-compose.prod.yml up -d
+```
+
 **Services**:
 - Flask + Gunicorn: Application server on port 5000 (internal)
 - PostgreSQL: Database server on port 5432 (internal)
 - Nginx: Reverse proxy on port 80 (external)
+
+**Security Features**:
+- ✅ CSRF protection enabled (Flask-WTF)
+- ✅ Nginx security headers (X-Frame-Options, X-XSS-Protection, etc.)
+- ✅ Rate limiting (10 req/s general, 100 req/s API)
+- ✅ Non-root container execution (UID 1000)
+- ✅ Health checks with automatic restart
 
 **Health Checks**:
 - PostgreSQL: `pg_isready` check every 10s
@@ -426,8 +449,8 @@ GitHub Actions workflows do NOT call `make security` because:
 
 **Startup**:
 ```bash
-# Set custom password (optional, defaults to "radiocalico")
-export DB_PASSWORD=your_secure_password
+# Set secure password BEFORE starting (see ⚠️ SECURITY above)
+export DB_PASSWORD=$(openssl rand -base64 32)
 
 # Start production stack
 docker compose -f docker-compose.prod.yml up -d

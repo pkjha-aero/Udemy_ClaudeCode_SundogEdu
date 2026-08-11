@@ -277,6 +277,48 @@ docker rm radiocalico
 - Password: Set via `DB_PASSWORD` env var (defaults to `radiocalico`)
 - Connection: `postgresql://radiocalico:password@postgres:5432/radiocalico`
 
+⚠️ **SECURITY WARNING: Production Database Password**
+
+The default password `radiocalico` is suitable **only for development and testing**. For production deployments, you **MUST** set a strong password via the `DB_PASSWORD` environment variable.
+
+**Generate a secure password:**
+```bash
+# Option 1: Using OpenSSL (Linux/macOS)
+export DB_PASSWORD=$(openssl rand -base64 32)
+
+# Option 2: Using Python
+export DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+
+# Option 3: Manually (minimum 32 characters, mix of upper/lower/numbers/special chars)
+export DB_PASSWORD="YourV3ryStr0ng!P@ssw0rd#WithSpecialChars"
+```
+
+**Start production with secure password:**
+```bash
+# Before starting, set the password
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Using DB_PASSWORD: $DB_PASSWORD"  # Save this somewhere safe!
+
+# Now start production
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Store the password securely:**
+- Do NOT commit `.env` files to git (they're in `.gitignore`)
+- Use your infrastructure's secret management (e.g., AWS Secrets Manager, HashiCorp Vault)
+- For self-hosted, use a `.env.production` file (gitignored) accessible only to deployment scripts
+- Consider Docker Secrets or Kubernetes Secrets if using orchestration
+
+**Verify the connection works:**
+```bash
+# Check if PostgreSQL is healthy
+docker compose -f docker-compose.prod.yml ps
+
+# Test the Flask app can connect to PostgreSQL
+curl http://localhost/api/health
+# Should return: {"status":"ok"}
+```
+
 **Changing Password**:
 ```bash
 # Before starting, set environment variable

@@ -1,10 +1,12 @@
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 import secrets
 import os
 
 db = SQLAlchemy()
+csrf = CSRFProtect()
 
 
 def create_app():
@@ -23,6 +25,7 @@ def create_app():
     app.config["SECRET_KEY"] = secrets.token_hex(32)
 
     db.init_app(app)
+    csrf.init_app(app)
 
     from app import routes
     app.register_blueprint(routes.bp)
