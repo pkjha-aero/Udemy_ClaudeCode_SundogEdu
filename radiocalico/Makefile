@@ -84,7 +84,7 @@ dev-stop: ## Stop development container
 ## Production Mode
 
 prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
-	@if [ -z "$(DB_PASSWORD)" ]; then \
+	@if [ -z "$$DB_PASSWORD" ]; then \
 		echo "$(YELLOW)❌ ERROR: DB_PASSWORD environment variable is required for production!$(NC)"; \
 		echo ""; \
 		echo "Set a secure password before starting:"; \
@@ -106,7 +106,7 @@ prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
 	@echo "   - Health checks enabled"
 	@echo "   - Accessible at http://localhost"
 	@echo ""
-	DB_PASSWORD=$(DB_PASSWORD) $(DOCKER_COMPOSE_PROD) up -d
+	$(DOCKER_COMPOSE_PROD) up -d
 	@echo "$(GREEN)✅ Services running in background$(NC)"
 	@echo "   View logs:  make logs-prod"
 	@echo "   Stop:       make stop"
