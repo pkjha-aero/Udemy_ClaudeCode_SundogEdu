@@ -6,7 +6,6 @@ PYTHON := $(VENV_DIR)/bin/python
 PIP := $(VENV_DIR)/bin/pip
 DOCKER_COMPOSE_DEV := docker compose
 DOCKER_COMPOSE_PROD := docker compose -f docker-compose.prod.yml
-DB_PASSWORD ?= radiocalico
 
 # Colors for output
 BLUE := \033[0;34m
@@ -85,6 +84,21 @@ dev-stop: ## Stop development container
 ## Production Mode
 
 prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
+	@if [ -z "$(DB_PASSWORD)" ]; then \
+		echo "$(YELLOW)❌ ERROR: DB_PASSWORD environment variable is required for production!$(NC)"; \
+		echo ""; \
+		echo "Set a secure password before starting:"; \
+		echo "  export DB_PASSWORD=\$$(openssl rand -base64 32)"; \
+		echo "  echo \"Save this password securely: \$$DB_PASSWORD\""; \
+		echo ""; \
+		echo "Then run: make prod"; \
+		echo ""; \
+		echo "Or use .env.production file:"; \
+		echo "  cp .env.production.example .env.production"; \
+		echo "  # Edit .env.production and set DB_PASSWORD"; \
+		echo "  docker compose -f docker-compose.prod.yml --env-file .env.production up -d"; \
+		exit 1; \
+	fi
 	@echo "$(BLUE)🚀 Starting Radio Calico in PRODUCTION mode...$(NC)"
 	@echo "   - Gunicorn with 4 workers"
 	@echo "   - PostgreSQL database"
