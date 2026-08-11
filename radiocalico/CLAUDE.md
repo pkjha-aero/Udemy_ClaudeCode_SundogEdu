@@ -286,7 +286,7 @@ Runs Python security analysis locally without Docker. Installs Bandit (SAST) and
 ```bash
 make security-docker
 ```
-Attempts to run the same tools as GitHub Actions (Trivy, Hadolint, etc.). Requires optional tools to be installed locally (see output for installation commands).
+Runs Trivy and Hadolint in Docker containers (no local installation needed). Scans Docker images for CVEs and validates Dockerfile best practices.
 
 **Common workflows:**
 ```bash
@@ -295,20 +295,111 @@ make clean && make security       # Clean environment, then scan
 make build && make security-docker # Build images, then scan containers
 ```
 
-**What gets checked:**
-| Target | Tools | Checks |
-|--------|-------|--------|
-| `make security` | Bandit, Safety | Python code vulnerabilities, known CVEs in dependencies |
-| `make security-docker` | Trivy, Hadolint | Docker image CVEs, Dockerfile best practices |
-| GitHub Actions (PR) | All 7 tools | Secrets, code quality, images, dependencies (comprehensive) |
-| GitHub Actions (nightly) | OWASP | Deep dependency analysis, transitive vulnerabilities |
+### Local Make vs GitHub Actions Security Workflows
+
+**Important:** Local `make security` targets and GitHub Actions workflows are **separate but complementary** — they do NOT call each other.
+
+#### Local Development (`make security` / `make security-docker`)
+
+**Purpose:** Rapid feedback for developers before pushing
+
+**Tools invoked directly by Makefile:**
+- `make security` → Bandit (Python SAST) + Safety (dependencies)
+- `make security-docker` → Trivy (image scanning) + Hadolint (Dockerfile linting)
+
+**Workflow:** Developer runs locally → sees output in terminal → fixes issues → commits → pushes PR
+
+**Advantages:**
+- ✅ Fast feedback loop (seconds)
+- ✅ No network calls to GitHub
+- ✅ Local debugging and iteration
+- ✅ Works offline
+
+#### CI/CD Security Scanning (`.github/workflows/security.yml` / `scorecard.yml`)
+
+**Purpose:** Comprehensive automated security checks on every PR and schedule
+
+**Tools invoked directly by GitHub Actions (NOT via make targets):**
+- TruffleHog → Secrets scanning
+- Bandit → Python SAST (via workflow, not `make security`)
+- Safety → Dependency vulnerabilities (via workflow)
+- Trivy → Docker image scanning (via GitHub Action, not `make security-docker`)
+- Hadolint → Dockerfile linting (via GitHub Action)
+- CodeQL → Code analysis
+- OpenSSF Scorecard → Security best practices assessment
+
+**Workflow:** Developer pushes PR → GitHub runs 7 security tools → results appear in Security tab + PR comments → developer fixes findings → reruns workflows
+
+**Advantages:**
+- ✅ 7 comprehensive tools (vs 2-4 locally)
+- ✅ Automated SARIF upload to Security tab
+- ✅ PR comments with summaries
+- ✅ Artifact storage for reports
+- ✅ Secrets scanning (not in local make targets)
+- ✅ Fresh environment (no local configuration drift)
+
+#### Comparison Table
+
+| Aspect | `make security` | `make security-docker` | GitHub Actions |
+|--------|---|---|---|
+| **When** | Local development | Local development | Every PR + schedule |
+| **Tools** | Bandit, Safety | Trivy, Hadolint | All 7 tools |
+| **Speed** | ~5-10 seconds | ~30-60 seconds | ~2-3 minutes |
+| **Setup Required** | Python venv | Docker only | None (runs on GitHub) |
+| **SARIF/Reports** | Local files only | Local files only | ✅ Uploaded to GitHub Security tab |
+| **Secrets Scanning** | ❌ Not included | ❌ Not included | ✅ TruffleHog |
+| **Code Analysis** | ❌ Not included | ❌ Not included | ✅ CodeQL |
+| **Best Practices** | ❌ Not included | ❌ Not included | ✅ OpenSSF Scorecard |
+
+#### Recommended Workflow
+
+```
+1. Before pushing:
+   make test && make security              # Run local Python checks
+   
+2. After pushing PR:
+   GitHub Actions runs automatically        # 7 comprehensive tools
+   
+3. Review results:
+   - Terminal: Local findings
+   - GitHub Security tab: Comprehensive results
+   - GitHub PR comments: Summary + artifacts
+   
+4. Fix findings:
+   Update code/dependencies
+   Commit and push (workflow reruns)
+   
+5. Merge:
+   All security checks pass → ready to merge
+```
+
+#### Why They're Separate (Not Consolidated)
+
+GitHub Actions workflows do NOT call `make security` because:
+
+1. **GitHub integration benefits lost** — Direct tool invocation enables:
+   - Automatic SARIF upload to Security tab
+   - Fine-grained artifact handling
+   - Workflow-specific report formatting
+   - Per-tool result aggregation
+
+2. **Explicit CI/CD logic** — Workflows show exactly what runs in CI/CD:
+   - No hidden dependencies on Makefile
+   - Easy to modify without breaking local development
+   - Clear separation of concerns
+
+3. **Different tool versions** — GitHub Actions can pin specific tool versions independently:
+   - Security tools update frequently
+   - Local and CI/CD can use different versions if needed
+   - No version conflicts between environments
 
 **Fixing security issues:**
-1. Run `make security` to identify local issues
-2. Fix issues in code or update dependencies
-3. Push a PR to run full GitHub Actions security suite
-4. Address any remaining findings before merge
-5. Dependabot PRs keep dependencies patched
+1. Run `make security` locally to identify Python issues
+2. Run `make security-docker` locally to check Docker issues
+3. Fix issues in code or update dependencies
+4. Push PR to trigger full GitHub Actions security suite (7 tools)
+5. Address any additional findings from CodeQL/TruffleHog/Scorecard
+6. Merge when all checks pass
 
 ## Current state
 
