@@ -308,7 +308,7 @@
           <div class="player-time"><span id="currentTime">0:00</span> / Live</div>
           <div class="player-volume">
             <span class="player-volume-icon">🔊</span>
-            <input type="range" min="0" max="100" value="70" id="volumeControl" onchange="setVolume(this.value)">
+            <input type="range" min="0" max="100" value="100" id="volumeControl" onchange="setVolume(this.value)">
           </div>
         </div>
       </div>
@@ -523,8 +523,8 @@
       initStream();
       fetchMetadata();
       setInterval(fetchMetadata, 10000);
-      volumeControl.value = 70;
-      setVolume(70);
+      volumeControl.value = 100;
+      setVolume(100);
     });
   </script>
 </body>
