@@ -107,7 +107,7 @@ prod: ## Start production stack (PostgreSQL + Gunicorn + Nginx)
 	@echo "   - Health checks enabled"
 	@echo "   - Accessible at http://localhost"
 	@echo ""
-	$(DOCKER_COMPOSE_PROD) up -d
+	@export DB_PASSWORD="$(DB_PASSWORD_ENV)" && $(DOCKER_COMPOSE_PROD) up -d
 	@echo "$(GREEN)✅ Services running in background$(NC)"
 	@echo "   View logs:  make logs-prod"
 	@echo "   Stop:       make stop"
