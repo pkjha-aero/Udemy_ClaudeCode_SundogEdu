@@ -134,10 +134,10 @@ For convenience, use `make` to manage the project:
 - `make prod-stop` — Stop production stack
 
 **Testing:**
-- `make test` — Run all tests with pytest
-- `make test-coverage` — Run tests with HTML coverage report
-- `make test-specific TEST=tests/test_api.py` — Run specific test file
-- `make test-watch` — Run tests in watch mode (requires pytest-watch)
+- `make test` — Run all 149 tests (fast, no coverage requirement) — use during development for quick feedback
+- `make test-coverage` — Run all tests with coverage measurement and 88% threshold (same as GitHub Actions) — use before pushing to verify PR will pass
+- `make test-specific TEST=tests/test_api.py` — Run specific test file (e.g., for debugging)
+- `make test-watch` — Run tests in watch mode (requires pytest-watch) — useful for TDD
 
 **Security:**
 - `make security` — Run local security analysis (Bandit SAST + Safety dependency check)
@@ -213,8 +213,44 @@ pytest --cov=app --cov-report=html
 - `tests/test_edge_cases.py` — error handling (20 tests)
 - `tests/test_session_management.py` — session isolation (15 tests)
 
+### Local vs GitHub Actions Testing
+
+**`make test` (Quick local validation):**
+```bash
+make test
+```
+- Runs all 149 tests with verbose output
+- No coverage requirement
+- Fast feedback (~11 seconds)
+- Use this for rapid development iteration
+
+**`make test-coverage` (Full local validation with coverage gate):**
+```bash
+make test-coverage
+```
+- Runs all 149 tests with coverage measurement
+- Enforces 88% minimum coverage (same as GitHub Actions)
+- Generates HTML coverage report at `htmlcov/index.html`
+- Use this before pushing to verify GitHub Actions will pass
+
+**GitHub Actions Workflow (`.github/workflows/tests.yml`):**
+- Runs same 149 test suite as `make test`
+- Enforces 88% minimum code coverage (fails if below threshold)
+- Sets `PYTHONPATH=.` to resolve module imports correctly
+- Blocks PR merge if:
+  - ❌ Any test fails, OR
+  - ❌ Code coverage drops below 88%
+- Uploads coverage reports to Codecov
+
+**Recommended workflow before pushing:**
+```bash
+make test-coverage        # Verify tests pass AND coverage meets 88% threshold
+make security             # Run security checks locally
+git push                  # GitHub Actions will run automatically
+```
+
 **CI/CD:** Automated testing, code review, and containerization on every PR:
-- `.github/workflows/tests.yml` — Pytest suite with 88% coverage gate
+- `.github/workflows/tests.yml` — Pytest suite with 88% coverage gate (requires PYTHONPATH=. for module resolution)
 - `.github/workflows/claude-code-review.yml` — AI code review (Claude Haiku 4.5)
 - `.github/workflows/docker-build.yml` — Docker image builds + smoke tests
 - `.github/scripts/` — Standalone Python scripts for code review, issue analysis, doc generation (Haiku 4.5)

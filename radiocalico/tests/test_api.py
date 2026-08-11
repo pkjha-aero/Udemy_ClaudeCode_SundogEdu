@@ -282,6 +282,8 @@ class TestRateSongAPI:
         from app import create_app
         app = create_app()
         app.config["TESTING"] = True
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["WTF_CSRF_ENABLED"] = False
         client2 = app.test_client()
 
         response2 = client2.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": False})
