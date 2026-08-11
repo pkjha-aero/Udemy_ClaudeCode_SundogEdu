@@ -681,9 +681,17 @@ Docker image was built before new dependencies were added to `requirements.txt`
 **Fix:**
 ```bash
 # Rebuild the affected image
-docker build --target=dev -t radiocalico:dev .    # For dev
-docker build --target=prod -t radiocalico:prod .  # For prod
-# Or use make
+docker build --target=dev -t radiocalico:dev .    # For dev only
+# Or use make:
+make build-dev
+
+docker build --target=prod -t radiocalico:prod .  # For prod only
+# Or use make:
+make prod-build
+
+# Rebuild both (recommended):
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
 make build
 ```
 
@@ -704,6 +712,8 @@ FATAL: password authentication failed for user "radiocalico"
 ```bash
 # Stop services
 docker compose -f docker-compose.prod.yml down
+# Or use make:
+make prod-stop
 
 # Remove stale database volume
 docker volume rm radiocalico_radiocalico-db
@@ -711,12 +721,16 @@ docker volume rm radiocalico_radiocalico-db
 # Set secure password and restart
 export DB_PASSWORD=$(openssl rand -base64 32)
 docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
 
 # Wait for PostgreSQL to initialize (8-10 seconds)
 sleep 10
 
 # Verify it works
 curl http://localhost/api/health
+# Or use make:
+make health
 # Should return: {"status":"ok"}
 ```
 
@@ -743,6 +757,9 @@ curl http://localhost/api/health
 If it persists after 30 seconds, check PostgreSQL logs:
 ```bash
 docker compose -f docker-compose.prod.yml logs postgres
+# Or use make:
+make logs-prod
+# (then look for postgres service logs)
 ```
 
 ---
@@ -760,16 +777,22 @@ Another process is using port 5000 (dev) or 80 (prod)
 **Fix:**
 ```bash
 # Stop all containers and clean up
-docker compose down
-docker compose -f docker-compose.prod.yml down
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
+make stop
 
-# Kill any lingering processes
+# Kill any lingering processes (if needed)
 docker kill $(docker ps -q) 2>/dev/null || true
 
-# Restart
+# Restart development
 docker compose up
-# or
+# Or use make:
+make dev
+
+# Or restart production
 docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
 ```
 
 ---
@@ -785,15 +808,26 @@ docker compose -f docker-compose.prod.yml up -d
 ```bash
 # Stop services
 docker compose down
+# Or use make:
+make dev-stop
+
+# For production:
+docker compose -f docker-compose.prod.yml down
+# Or use make:
+make prod-stop
 
 # Remove database volume
 docker volume rm radiocalico_radiocalico-db
 
-# Remove database volume (production)
-docker volume rm radiocalico_radiocalico-db
-
-# Restart - database will be fresh
+# Restart - database will be fresh with new initialization
 docker compose up
+# Or use make:
+make dev
+
+# Or for production:
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
 ```
 
 ---
@@ -815,12 +849,23 @@ docker ps -a
 
 # Check compose status
 docker compose ps
-docker compose -f docker-compose.prod.yml ps
+# Or use make:
+make status
 
-# Restart containers
+# Check production status
+docker compose -f docker-compose.prod.yml ps
+# Or use make:
+make status
+
+# Restart containers (development)
 docker compose up
-# or
+# Or use make:
+make dev
+
+# Or restart production
 docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+make prod
 ```
 
 ---
@@ -831,10 +876,18 @@ docker compose -f docker-compose.prod.yml up -d
 ```bash
 # Development
 docker compose logs -f radiocalico-dev
+# Or use make:
+make logs-dev
 
-# Production
+# Production (Flask)
 docker compose -f docker-compose.prod.yml logs -f radiocalico
+# Or use make:
+make logs-prod
+
+# Production (PostgreSQL)
 docker compose -f docker-compose.prod.yml logs -f postgres
+
+# Production (Nginx)
 docker compose -f docker-compose.prod.yml logs -f nginx
 ```
 
@@ -866,8 +919,9 @@ docker volume inspect radiocalico_radiocalico-db
 **Full reset (nuclear option):**
 ```bash
 # Stop everything
-docker compose down
-docker compose -f docker-compose.prod.yml down
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
+make stop
 
 # Remove all volumes
 docker volume rm radiocalico_radiocalico-db
@@ -878,9 +932,21 @@ docker rmi radiocalico:dev radiocalico:prod
 # Remove all stopped containers
 docker container prune
 
-# Start fresh
+# Start fresh - rebuild images
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make:
 make build
+
+# Start development
 docker compose up
+# Or use make:
+make dev
+
+# Or start production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make (don't forget to set DB_PASSWORD first):
+export DB_PASSWORD=$(openssl rand -base64 32)
+make prod
 ```
 
 ---
@@ -896,12 +962,20 @@ Rebuild Docker images when:
 
 **Rebuild command:**
 ```bash
-# Rebuild both
+# Rebuild both (recommended)
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
 make build
 
-# Or specific target
+# Or rebuild specific target
 docker build --target=dev -t radiocalico:dev .
+# Or use make:
+make build-dev
+
+# Or for production
 docker build --target=prod -t radiocalico:prod .
+# Or use make:
+make prod-build
 ```
 
 ---
@@ -917,6 +991,10 @@ Remove database volumes when:
 **Remove command:**
 ```bash
 docker volume rm radiocalico_radiocalico-db
+# Note: After removing, restart with:
+# make prod (for production)
+# or
+# make dev (for development)
 ```
 
 ---

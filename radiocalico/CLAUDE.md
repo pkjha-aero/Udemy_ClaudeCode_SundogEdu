@@ -495,11 +495,17 @@ make prod
 ```bash
 # For development:
 docker build --target=dev -t radiocalico:dev .
+# Or use make:
+make build-dev
 
 # For production:
+docker build --target=prod -t radiocalico:prod .
+# Or use make:
 make prod-build
 
-# Or rebuild both:
+# Or rebuild both (recommended):
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make:
 make build
 ```
 
@@ -538,6 +544,8 @@ make prod
 
 ```bash
 # Step 1: Stop production
+docker compose -f docker-compose.prod.yml down
+# Or use make:
 make prod-stop
 
 # Step 2: Remove stale database volume
@@ -548,6 +556,8 @@ export DB_PASSWORD=$(openssl rand -base64 32)
 echo "Save this: $DB_PASSWORD"
 
 # Step 4: Restart production
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
 make prod
 
 # Step 5: Verify it works (wait 5-10 seconds for PostgreSQL to initialize)
@@ -579,8 +589,10 @@ Just wait - PostgreSQL takes a few seconds to initialize:
 # Wait 8-10 seconds for PostgreSQL health check to pass
 sleep 10
 
-# Then test
+# Then test health endpoint
 curl http://localhost/api/health
+# Or use make:
+make health
 ```
 
 If it persists after 30 seconds, check PostgreSQL logs:
@@ -599,12 +611,14 @@ docker compose -f docker-compose.prod.yml logs postgres
 **Solution:**
 ```bash
 # Stop all containers
+docker compose down && docker compose -f docker-compose.prod.yml down
+# Or use make:
 make stop
 
-# Kill any lingering containers
+# Kill any lingering containers (if needed)
 docker kill $(docker ps -q) 2>/dev/null || true
 
-# Remove all containers
+# Remove all containers (if needed)
 docker rm $(docker ps -a -q) 2>/dev/null || true
 
 # Restart
@@ -619,23 +633,38 @@ When **any** Docker issue occurs:
 
 ```bash
 # 1. Check if containers are running
-docker compose -f docker-compose.prod.yml ps  # or docker-compose ps
+docker compose -f docker-compose.prod.yml ps
+# Or use make:
+make status
 
 # 2. View recent logs
-make logs-prod   # or make logs-dev
+docker compose -f docker-compose.prod.yml logs -f radiocalico
+# Or use make:
+make logs-prod
 
 # 3. If import error → rebuild image
-make build       # Rebuilds both dev and prod
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
+make build
 
-# 4. If password error → remove volume
+# 4. If password error → remove volume and restart
 docker volume rm radiocalico_radiocalico-db
+docker compose -f docker-compose.prod.yml up -d
+# Or use make:
+# (remove volume manually, then:)
+make prod
 
 # 5. If connection error → wait for PostgreSQL
 sleep 10 && curl http://localhost/api/health
+# Or use make:
+sleep 10 && make health
 
 # 6. If still failing → full reset
+docker compose down && docker compose -f docker-compose.prod.yml down
+docker volume rm radiocalico_radiocalico-db
+docker build --target=dev -t radiocalico:dev . && docker build --target=prod -t radiocalico:prod .
+# Or use make (recommended):
 make clean
-make prod-stop
 docker volume rm radiocalico_radiocalico-db
 make build
 export DB_PASSWORD=$(openssl rand -base64 32)
