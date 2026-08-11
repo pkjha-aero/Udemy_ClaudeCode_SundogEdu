@@ -150,29 +150,33 @@ security: ## Run local security analysis (Bandit, Safety)
 	@echo "   Full reports: See output above"
 	@echo "   Bandit CSV: /tmp/bandit-report.csv"
 
-security-docker: ## Run full security stack in Docker (like CI/CD)
-	@echo "$(BLUE)🔐 Running full security stack in Docker...$(NC)"
+security-docker: ## Run Docker-based security checks (Trivy + Hadolint)
+	@echo "$(BLUE)🔐 Running Docker-based security checks...$(NC)"
 	@echo ""
-	@echo "   This runs the same security tools as GitHub Actions:"
-	@echo "   - TruffleHog (secrets scanning)"
-	@echo "   - Bandit (Python SAST)"
-	@echo "   - Safety (dependency vulnerabilities)"
-	@echo "   - Trivy (Docker image scanning)"
-	@echo "   - Hadolint (Dockerfile linting)"
-	@echo "   - CodeQL (code analysis)"
+	@echo "$(BLUE)Building production Docker image...$(NC)"
+	docker build --target=prod -t radiocalico:prod . > /dev/null 2>&1
+	@echo "$(GREEN)✅ Image built$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Note: Full Docker security stack requires additional setup.$(NC)"
-	@echo "$(YELLOW)For now, run 'make security' or push a PR to trigger CI scans.$(NC)"
+	@echo "$(BLUE)Running Trivy vulnerability scanner on Docker image...$(NC)"
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL radiocalico:prod
 	@echo ""
-	@echo "$(BLUE)Running available Docker security checks...$(NC)"
-	@docker build --target=prod -t radiocalico:prod . > /dev/null 2>&1
-	@echo "$(BLUE)Running Trivy on prod image...$(NC)"
-	@trivy image --severity HIGH,CRITICAL radiocalico:prod || echo "Trivy not installed. Install: brew install trivy"
-	@echo ""
-	@echo "$(BLUE)Running Hadolint on Dockerfile...$(NC)"
-	@hadolint Dockerfile || echo "Hadolint not installed. Install: brew install hadolint"
+	@echo "$(BLUE)Running Hadolint Dockerfile linter...$(NC)"
+	@if command -v hadolint >/dev/null 2>&1; then \
+		echo "$(GREEN)✓ Hadolint found locally$(NC)"; \
+		hadolint Dockerfile; \
+	else \
+		echo "$(YELLOW)✓ Running Hadolint in Docker...$(NC)"; \
+		docker run --rm -i hadolint/hadolint < Dockerfile; \
+	fi
 	@echo ""
 	@echo "$(GREEN)✅ Docker security checks complete$(NC)"
+	@echo ""
+	@echo "$(BLUE)Full CI/CD security stack coverage:$(NC)"
+	@echo "  ✅ Docker image scanning (Trivy) - Done above"
+	@echo "  ✅ Dockerfile linting (Hadolint) - Done above"
+	@echo "  ✅ Python security (Bandit + Safety) - Run: make security"
+	@echo "  → Secrets scanning (TruffleHog) - Push PR to trigger"
+	@echo "  → Code analysis (CodeQL) - Push PR to trigger"
 
 ## Logging & Monitoring
 
