@@ -666,10 +666,269 @@ docker run --rm -v radiocalico_radiocalico-data:/data \
 - [Nginx Documentation](https://nginx.org/en/docs/)
 - [Flask Documentation](https://flask.palletsprojects.com/)
 
+## Troubleshooting
+
+### Issue: Container exits immediately with import error
+
+**Error message:**
+```
+ModuleNotFoundError: No module named 'flask_wtf'
+```
+
+**Cause:** 
+Docker image was built before new dependencies were added to `requirements.txt`
+
+**Fix:**
+```bash
+# Rebuild the affected image
+docker build --target=dev -t radiocalico:dev .    # For dev
+docker build --target=prod -t radiocalico:prod .  # For prod
+# Or use make
+make build
+```
+
+---
+
+### Issue: 502 Bad Gateway or password authentication failed
+
+**Error message:**
+```
+FATAL: password authentication failed for user "radiocalico"
+```
+
+**Cause:**
+- PostgreSQL volume was initialized with a different password
+- Flask and PostgreSQL passwords don't match
+
+**Fix:**
+```bash
+# Stop services
+docker compose -f docker-compose.prod.yml down
+
+# Remove stale database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Set secure password and restart
+export DB_PASSWORD=$(openssl rand -base64 32)
+docker compose -f docker-compose.prod.yml up -d
+
+# Wait for PostgreSQL to initialize (8-10 seconds)
+sleep 10
+
+# Verify it works
+curl http://localhost/api/health
+# Should return: {"status":"ok"}
+```
+
+---
+
+### Issue: Connection refused on startup
+
+**Error message:**
+```
+connection to server at "postgres" failed: Connection refused
+```
+
+**Cause:**
+Race condition - Flask starts before PostgreSQL is ready
+
+**Fix:**
+Just wait for PostgreSQL to be ready:
+```bash
+# PostgreSQL health check needs 5-10 seconds
+sleep 10
+curl http://localhost/api/health
+```
+
+If it persists after 30 seconds, check PostgreSQL logs:
+```bash
+docker compose -f docker-compose.prod.yml logs postgres
+```
+
+---
+
+### Issue: Port already in use
+
+**Error message:**
+```
+bind: address already in use
+```
+
+**Cause:**
+Another process is using port 5000 (dev) or 80 (prod)
+
+**Fix:**
+```bash
+# Stop all containers and clean up
+docker compose down
+docker compose -f docker-compose.prod.yml down
+
+# Kill any lingering processes
+docker kill $(docker ps -q) 2>/dev/null || true
+
+# Restart
+docker compose up
+# or
+docker compose -f docker-compose.prod.yml up -d
+```
+
+---
+
+### Issue: Database volume out of sync
+
+**Symptoms:**
+- Changes to code don't reflect in database
+- Schema mismatches
+- Stale data from previous runs
+
+**Fix:**
+```bash
+# Stop services
+docker compose down
+
+# Remove database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Remove database volume (production)
+docker volume rm radiocalico_radiocalico-db
+
+# Restart - database will be fresh
+docker compose up
+```
+
+---
+
+### Issue: Can't connect to container
+
+**Error message:**
+```
+Error: No such container
+```
+
+**Cause:**
+Container doesn't exist or has different name
+
+**Fix:**
+```bash
+# List all containers
+docker ps -a
+
+# Check compose status
+docker compose ps
+docker compose -f docker-compose.prod.yml ps
+
+# Restart containers
+docker compose up
+# or
+docker compose -f docker-compose.prod.yml up -d
+```
+
+---
+
+### Debugging Commands
+
+**View container logs:**
+```bash
+# Development
+docker compose logs -f radiocalico-dev
+
+# Production
+docker compose -f docker-compose.prod.yml logs -f radiocalico
+docker compose -f docker-compose.prod.yml logs -f postgres
+docker compose -f docker-compose.prod.yml logs -f nginx
+```
+
+**Check environment variables:**
+```bash
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep DB
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep FLASK
+```
+
+**Test database connectivity:**
+```bash
+# From Flask container
+docker compose -f docker-compose.prod.yml exec radiocalico python -c \
+  "from app import create_app; app = create_app(); print('✅ Database connected')"
+
+# From PostgreSQL container
+docker compose -f docker-compose.prod.yml exec postgres pg_isready -U radiocalico
+```
+
+**Inspect volumes:**
+```bash
+# List all volumes
+docker volume ls | grep radiocalico
+
+# Inspect volume details
+docker volume inspect radiocalico_radiocalico-db
+```
+
+**Full reset (nuclear option):**
+```bash
+# Stop everything
+docker compose down
+docker compose -f docker-compose.prod.yml down
+
+# Remove all volumes
+docker volume rm radiocalico_radiocalico-db
+
+# Remove all images
+docker rmi radiocalico:dev radiocalico:prod
+
+# Remove all stopped containers
+docker container prune
+
+# Start fresh
+make build
+docker compose up
+```
+
+---
+
+### When to Rebuild Docker Images
+
+Rebuild Docker images when:
+- ✅ Dependencies in `requirements.txt` change (new/updated packages)
+- ✅ Python version changes in Dockerfile
+- ✅ System packages change (apt-get packages)
+- ✅ Base image (Python version) changes
+- ✅ After switching git branches with different dependencies
+
+**Rebuild command:**
+```bash
+# Rebuild both
+make build
+
+# Or specific target
+docker build --target=dev -t radiocalico:dev .
+docker build --target=prod -t radiocalico:prod .
+```
+
+---
+
+### When to Remove Volumes
+
+Remove database volumes when:
+- ✅ Password changes (DB_PASSWORD)
+- ✅ Starting with a clean database
+- ✅ Testing database initialization
+- ✅ Previous initialization failed
+
+**Remove command:**
+```bash
+docker volume rm radiocalico_radiocalico-db
+```
+
+---
+
 ## Support
 
 For issues or questions:
-1. Check logs: `docker compose logs -f`
-2. Review this guide's Troubleshooting section
+1. Check the Troubleshooting section above
+2. View logs: `docker compose logs -f`
 3. Check Docker documentation
-4. Open an issue on GitHub
+4. Open an issue on GitHub with:
+   - Error message (full output)
+   - Steps to reproduce
+   - Docker version: `docker --version`
+   - Docker Compose version: `docker compose --version`

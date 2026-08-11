@@ -465,3 +465,203 @@ docker compose -f docker-compose.prod.yml up -d
 - Run `docker compose -f docker-compose.prod.yml ps` to verify all services are healthy
 
 See `docker_doc/DOCKER.md` for complete production setup and configuration guide.
+
+## Troubleshooting Docker Issues
+
+### Problem: `ModuleNotFoundError: No module named 'flask_wtf'` (or other imports)
+
+**Symptoms:**
+- Container exits immediately with import error
+- `make dev` or `make prod` shows: `ModuleNotFoundError: No module named 'X'`
+- Error appears in first few lines of container startup
+
+**Root Cause:** 
+Docker image was built before new dependencies were added to `requirements.txt`
+
+**Solution:**
+
+**Step 1: Identify which mode has the issue**
+```bash
+# For development issues:
+make dev
+# Look for ModuleNotFoundError in output
+
+# For production issues:
+make prod
+# Check logs: docker compose -f docker-compose.prod.yml logs radiocalico
+```
+
+**Step 2: Rebuild the appropriate Docker image**
+```bash
+# For development:
+docker build --target=dev -t radiocalico:dev .
+
+# For production:
+make prod-build
+
+# Or rebuild both:
+make build
+```
+
+**Step 3: Restart the service**
+```bash
+# For development:
+make dev-clean
+
+# For production:
+make prod-stop
+make prod
+```
+
+**When This Happens:**
+- After adding new packages to `requirements.txt`
+- After switching branches with different dependencies
+- After pulling changes that update dependencies
+
+---
+
+### Problem: `502 Bad Gateway` or `password authentication failed`
+
+**Symptoms:**
+- Website shows: 502 Bad Gateway
+- Logs show: `FATAL: password authentication failed for user "radiocalico"`
+- PostgreSQL container is running but Flask can't connect
+
+**Root Causes:**
+1. Stale PostgreSQL volume with old password
+2. DB_PASSWORD not set when starting production
+3. Flask image missing dependencies
+
+**Solution:**
+
+**For password authentication failures:**
+
+```bash
+# Step 1: Stop production
+make prod-stop
+
+# Step 2: Remove stale database volume
+docker volume rm radiocalico_radiocalico-db
+
+# Step 3: Set secure password
+export DB_PASSWORD=$(openssl rand -base64 32)
+echo "Save this: $DB_PASSWORD"
+
+# Step 4: Restart production
+make prod
+
+# Step 5: Verify it works (wait 5-10 seconds for PostgreSQL to initialize)
+sleep 8
+curl http://localhost/api/health
+# Should return: {"status":"ok"}
+```
+
+**For missing dependency errors (Flask won't start):**
+- Follow the "ModuleNotFoundError" solution above
+- Also run the password solution above
+
+---
+
+### Problem: `Connection refused` when Flask starts
+
+**Symptoms:**
+- Flask starts but can't connect to PostgreSQL
+- Error: `connection to server at "postgres" ... failed: Connection refused`
+- Happens immediately on startup
+
+**Root Cause:** 
+Race condition - Flask is starting before PostgreSQL is ready
+
+**Solution:**
+Just wait - PostgreSQL takes a few seconds to initialize:
+
+```bash
+# Wait 8-10 seconds for PostgreSQL health check to pass
+sleep 10
+
+# Then test
+curl http://localhost/api/health
+```
+
+If it persists after 30 seconds, check PostgreSQL logs:
+```bash
+docker compose -f docker-compose.prod.yml logs postgres
+```
+
+---
+
+### Problem: Port already in use
+
+**Symptoms:**
+- Error: `bind: address already in use`
+- Can't start `make dev` or `make prod`
+
+**Solution:**
+```bash
+# Stop all containers
+make stop
+
+# Kill any lingering containers
+docker kill $(docker ps -q) 2>/dev/null || true
+
+# Remove all containers
+docker rm $(docker ps -a -q) 2>/dev/null || true
+
+# Restart
+make dev   # or make prod
+```
+
+---
+
+### Quick Troubleshooting Checklist
+
+When **any** Docker issue occurs:
+
+```bash
+# 1. Check if containers are running
+docker compose -f docker-compose.prod.yml ps  # or docker-compose ps
+
+# 2. View recent logs
+make logs-prod   # or make logs-dev
+
+# 3. If import error → rebuild image
+make build       # Rebuilds both dev and prod
+
+# 4. If password error → remove volume
+docker volume rm radiocalico_radiocalico-db
+
+# 5. If connection error → wait for PostgreSQL
+sleep 10 && curl http://localhost/api/health
+
+# 6. If still failing → full reset
+make clean
+make prod-stop
+docker volume rm radiocalico_radiocalico-db
+make build
+export DB_PASSWORD=$(openssl rand -base64 32)
+make prod
+```
+
+---
+
+### Common Docker Commands for Debugging
+
+```bash
+# View all container logs
+docker compose -f docker-compose.prod.yml logs radiocalico  # Last 100 lines
+docker compose -f docker-compose.prod.yml logs -f radiocalico  # Follow logs
+
+# Check container status
+docker ps -a
+docker compose -f docker-compose.prod.yml ps
+
+# View environment variables in running container
+docker compose -f docker-compose.prod.yml exec radiocalico env | grep DB
+
+# Test database connection from Flask container
+docker compose -f docker-compose.prod.yml exec radiocalico python -c \
+  "import psycopg2; conn = psycopg2.connect('postgresql://radiocalico:password@postgres:5432/radiocalico'); print('Connected!')"
+
+# Check PostgreSQL is accepting connections
+docker compose -f docker-compose.prod.yml exec postgres pg_isready -U radiocalico
+```
