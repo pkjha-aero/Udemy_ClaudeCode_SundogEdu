@@ -51,6 +51,7 @@ make security          # Run security analysis (Bandit + Safety)
 **Automated on Every PR:**
 - ✅ Unit tests (pytest, 88% coverage gate)
 - ✅ Security scanning (Bandit, Safety, Trivy, Hadolint, CodeQL, TruffleHog)
+- ✅ Security best practices (OpenSSF Scorecard)
 - ✅ AI code review (Claude Haiku 4.5)
 - ✅ Docker build & smoke tests
 - ✅ Issue classification & analysis

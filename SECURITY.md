@@ -34,13 +34,14 @@ To ensure consistent security practices, we use automated scanning on every PR a
 
 ### What Developers Encounter on PRs
 
-**6 Security Tools Run Automatically:**
+**7 Security Tools Run Automatically:**
 1. **TruffleHog** — Detects exposed secrets (API keys, passwords, tokens)
 2. **Bandit** — Scans Python code for security vulnerabilities (SQL injection, XSS, etc.)
 3. **Safety** — Checks Python dependencies for known CVEs
 4. **Trivy** — Scans Docker images for container vulnerabilities
 5. **Hadolint** — Lints Dockerfile for security and best practice violations
 6. **CodeQL** — Performs deep code analysis for security and quality issues
+7. **OpenSSF Scorecard** — Assesses repository security best practices and maturity
 
 **On Every PR:**
 - Security scan results appear in PR comments
@@ -51,6 +52,29 @@ To ensure consistent security practices, we use automated scanning on every PR a
 **Nightly (Scheduled):**
 - OWASP Dependency-Check runs comprehensive dependency analysis
 - Detects transitive dependencies and supply chain risks
+- OpenSSF Scorecard evaluates security best practices maturity
+
+### OpenSSF Scorecard
+
+OpenSSF Scorecard assesses this repository's security posture across 16+ dimensions:
+
+- **Branch Protection** — Requires reviews, status checks, dismissals
+- **Code Review** — Pull request review enforcement
+- **CI/CD** — Automated testing and security checks
+- **Dependency Updates** — Automated dependency management (Dependabot)
+- **License** — Proper license declarations
+- **Maintained** — Recent activity and responsiveness
+- **SAST** — Static analysis (Bandit, CodeQL)
+- **Signed Releases** — Cryptographic commit/release signatures
+- **Token Permissions** — GitHub Actions least privilege
+- **Vulnerabilities** — Vulnerability disclosure policy
+- **And more...** — Binary artifacts, packaging, pinned dependencies, etc.
+
+**Results visible in:**
+- GitHub Security tab (detailed breakdown by check)
+- PR comments (summary of scorecard findings)
+
+This framework aligns with SLSA supply chain security standards and helps identify improvements for security maturity.
 
 ### Dependabot for Automatic Updates
 
@@ -187,6 +211,7 @@ Before submitting a PR:
 | **Trivy** | Container image scanning | Every PR |
 | **Hadolint** | Dockerfile linting | Every PR |
 | **CodeQL** | Code analysis | Every PR + daily |
+| **OpenSSF Scorecard** | Security best practices assessment | Every PR + weekly |
 | **Dependabot** | Dependency updates | Weekly |
 | **pytest** | Unit tests | Every PR |
 
