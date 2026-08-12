@@ -269,7 +269,10 @@ jobs:
 - **Dev**: http://localhost:5000 (Flask + SQLite)
 - **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)
 
-Start locally: \`make dev\` or \`make prod\``;
+Start locally: \`\`\`
+make dev    # or make prod
+\`\`\`
+`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
