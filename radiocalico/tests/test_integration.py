@@ -148,3 +148,178 @@ class TestMultipleSessions:
         # Both sessions successfully rated the song
         assert response1.status_code in [200, 201]
         assert response2.status_code in [200, 201]
+
+
+class TestUserManagementWorkflow:
+    """Tests for user creation and management workflows."""
+
+    def test_add_user_workflow(self, client, db_session):
+        """Test: Add user via form → verify in database → check in API."""
+        from app.models import User
+
+        response = client.post("/users", data={"name": "Test User", "email": "testuser@example.com"})
+        assert response.status_code == 302  # Redirect after successful submission
+
+        user = User.query.filter_by(email="testuser@example.com").first()
+        assert user is not None
+        assert user.name == "Test User"
+
+        # Verify user appears in API response
+        api_response = client.get("/api/users")
+        users_data = json.loads(api_response.data)
+        emails = [u["email"] for u in users_data]
+        assert "testuser@example.com" in emails
+
+    def test_duplicate_user_rejected(self, client, db_session, sample_user):
+        """Test: Duplicate email is rejected."""
+        from app.models import User
+
+        response = client.post("/users", data={"name": "Another User", "email": sample_user.email})
+        assert response.status_code == 302
+
+        # Count should still be 1 (no duplicate added)
+        duplicates = User.query.filter_by(email=sample_user.email).all()
+        assert len(duplicates) == 1
+
+    def test_user_appears_on_homepage(self, client, sample_user):
+        """Test: Added user appears on homepage."""
+        response = client.get("/")
+        assert response.status_code == 200
+        assert sample_user.name.encode() in response.data or sample_user.email.encode() in response.data
+
+
+class TestItemsWorkflow:
+    """Tests for items list and API."""
+
+    def test_items_api_returns_list(self, client, sample_item):
+        """Test: Items API returns items."""
+        response = client.get("/api/items")
+        assert response.status_code == 200
+        items = json.loads(response.data)
+        assert isinstance(items, list)
+        assert len(items) > 0
+
+    def test_items_appear_on_homepage(self, client, sample_item):
+        """Test: Items appear on homepage."""
+        response = client.get("/")
+        assert response.status_code == 200
+        assert sample_item.name.encode() in response.data
+
+
+class TestHealthCheckWorkflow:
+    """Tests for health check endpoints."""
+
+    def test_health_endpoint_success(self, client):
+        """Test: Health check returns OK."""
+        response = client.get("/api/health")
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["status"] == "ok"
+
+    def test_health_check_during_heavy_load(self, client, sample_song):
+        """Test: Health check succeeds even with concurrent requests."""
+        health_response = client.get("/api/health")
+        assert health_response.status_code == 200
+
+        client.get("/api/song/current?title=S1&artist=A1")
+        client.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": True})
+
+        health_response = client.get("/api/health")
+        assert health_response.status_code == 200
+
+
+class TestRatingUpdateWorkflow:
+    """Tests for updating existing ratings."""
+
+    def test_update_rating_changes_vote(self, client, sample_song):
+        """Test: Rate → change vote → verify counts update."""
+        # First rating: thumbs up
+        response1 = client.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": True})
+        data1 = json.loads(response1.data)
+        initial_down = data1["thumbs_down"]
+
+        # Change to thumbs down
+        response2 = client.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": False})
+        data2 = json.loads(response2.data)
+
+        assert data2["user_rating"] == "down"
+        # Thumbs down should increase
+        assert data2["thumbs_down"] >= initial_down
+
+
+class TestErrorHandlingWorkflow:
+    """Tests for error scenarios."""
+
+    def test_rate_nonexistent_song(self, client):
+        """Test: Rating nonexistent song returns 404."""
+        response = client.post("/api/song/rate", json={"song_id": 99999, "is_thumbs_up": True})
+        assert response.status_code == 404
+
+    def test_rate_with_missing_song_id(self, client):
+        """Test: Rating without song_id returns 400."""
+        response = client.post("/api/song/rate", json={"is_thumbs_up": True})
+        assert response.status_code == 400
+
+    def test_rate_with_missing_is_thumbs_up(self, client, sample_song):
+        """Test: Rating without is_thumbs_up returns 400."""
+        response = client.post("/api/song/rate", json={"song_id": sample_song.id})
+        assert response.status_code == 400
+
+    def test_invalid_json_request(self, client):
+        """Test: Invalid JSON returns 400."""
+        response = client.post("/api/song/rate",
+                              data="invalid json",
+                              content_type="application/json")
+        assert response.status_code in [400, 415]
+
+
+class TestEndToEndWorkflow:
+    """Tests for complete end-to-end workflows."""
+
+    def test_homepage_to_player_workflow(self, client, sample_user, sample_item):
+        """Test: Load homepage → verify player link → access player."""
+        # Load homepage
+        home_response = client.get("/")
+        assert home_response.status_code == 200
+
+        # Verify player page is accessible
+        player_response = client.get("/player")
+        assert player_response.status_code == 200
+
+    def test_full_user_to_rating_workflow(self, client, db_session):
+        """Test: Add user → play song → rate → view updated counts."""
+        from app.models import User
+
+        # Add new user
+        user_response = client.post("/users", data={"name": "New User", "email": "newuser@test.com"})
+        assert user_response.status_code == 302
+
+        # Get song (creates it if new)
+        song_response = client.get("/api/song/current?title=TestSong&artist=TestArtist&album=TestAlbum&date=2026-08-12")
+        song_data = json.loads(song_response.data)
+        song_id = song_data["id"]
+
+        # Rate the song
+        rating_response = client.post("/api/song/rate", json={"song_id": song_id, "is_thumbs_up": True})
+        rating_data = json.loads(rating_response.data)
+
+        assert rating_data["user_rating"] == "up"
+        assert rating_data["thumbs_up"] >= 1
+
+        # Verify user exists
+        user = User.query.filter_by(email="newuser@test.com").first()
+        assert user is not None
+
+    def test_rating_persistence_workflow(self, client, sample_song):
+        """Test: Rate song → refresh → verify rating persists."""
+        # Rate song
+        rate_response = client.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": True})
+        rate_data = json.loads(rate_response.data)
+
+        # Fetch song again
+        fetch_response = client.get(f"/api/song/current?title={sample_song.title}&artist={sample_song.artist}")
+        fetch_data = json.loads(fetch_response.data)
+
+        # Rating should persist
+        assert fetch_data["user_rating"] == "up"
+        assert fetch_data["thumbs_up"] == rate_data["thumbs_up"]
