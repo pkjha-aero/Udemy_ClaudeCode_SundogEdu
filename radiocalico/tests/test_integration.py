@@ -236,7 +236,6 @@ class TestRatingUpdateWorkflow:
         # First rating: thumbs up
         response1 = client.post("/api/song/rate", json={"song_id": sample_song.id, "is_thumbs_up": True})
         data1 = json.loads(response1.data)
-        initial_up = data1["thumbs_up"]
         initial_down = data1["thumbs_down"]
 
         # Change to thumbs down
