@@ -78,7 +78,9 @@ def save_documentation(docs: str):
     docs_dir = Path("radiocalico/docs")
     docs_dir.mkdir(exist_ok=True)
 
-    output_file = docs_dir / "API.md"
+    # Note: API.md is maintained manually and should not be auto-generated
+    # This script only generates supplementary docs in the docs/ directory
+    output_file = docs_dir / "ARCHITECTURE.md"
     with open(output_file, "w") as f:
         f.write(docs)
 
