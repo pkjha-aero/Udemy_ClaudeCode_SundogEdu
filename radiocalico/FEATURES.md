@@ -209,10 +209,10 @@ Overview of Radio Calico's current capabilities and planned enhancements.
 
 Want to help implement a feature?
 
-1. **Report a Bug** - Open a GitHub issue
-2. **Suggest a Feature** - Discuss in issues
-3. **Submit a PR** - Follow [CONTRIBUTING guidelines](../CONTRIBUTING.md)
-4. **Code Review** - All changes require review
+1. **Report a Bug** - Open a GitHub issue with reproduction steps
+2. **Suggest a Feature** - Discuss in GitHub issues
+3. **Submit a PR** - Fork, branch, make changes, and create a pull request
+4. **Code Review** - All changes require review before merging
 
 See [SECURITY.md](../SECURITY.md) for security reporting guidelines.
 
