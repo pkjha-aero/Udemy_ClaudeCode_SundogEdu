@@ -139,6 +139,9 @@ jobs:
         run: |
           cd radiocalico
 
+          # Set test database password for docker-compose
+          export DB_PASSWORD="test-password-for-ci"
+
           # Test docker-compose.prod.yml is valid
           docker compose -f docker-compose.prod.yml config > /dev/null
           echo "✅ docker-compose.prod.yml is valid"
