@@ -254,24 +254,7 @@ jobs:
         with:
           script: |
             const buildStatus = '${{ needs.smoke-test-dev.result }}' === 'success' && '${{ needs.smoke-test-prod.result }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
-            const comment = `## 🐳 Docker Build & Test Results
-
-**Build Status**: ${buildStatus}
-
-### Tests Completed
-- ✅ Dev image build
-- ✅ Prod image build
-- ✅ Dev smoke test (health check)
-- ✅ Prod smoke test (all services + health check)
-- ✅ Image verification (Python, Gunicorn, permissions)
-
-### Access URLs (when running locally)
-- **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)
-
-Start production: \`\`\`make prod\`\`\`
-
-(Set DB_PASSWORD first: \`export DB_PASSWORD=$(openssl rand -base64 32)\`)
-`;
+            const comment = '## 🐳 Docker Build & Test Results\n\n**Build Status**: ' + buildStatus + '\n\n### Tests Completed\n- ✅ Dev image build\n- ✅ Prod image build\n- ✅ Dev smoke test (health check)\n- ✅ Prod smoke test (all services + health check)\n- ✅ Image verification (Python, Gunicorn, permissions)\n\n### Access URLs (when running locally)\n- **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)\n\nStart production: ```make prod```\n\n(Set DB_PASSWORD first: ```export DB_PASSWORD=$(openssl rand -base64 32)``)';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
