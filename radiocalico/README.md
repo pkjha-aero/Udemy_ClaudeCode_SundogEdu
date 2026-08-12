@@ -66,4 +66,4 @@ make security          # Run security analysis (Bandit + Safety)
 - `make security` — Run local security analysis
 - `make clean` — Clean up containers and cache
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [SECURITY.md](../SECURITY.md) for security policies. See [docker_doc/DOCKER.md](docker_doc/DOCKER.md) for containerization details.
+See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [DOCKER.md](DOCKER.md) for containerization details. See [API.md](API.md) for REST API documentation. See [SECURITY.md](../SECURITY.md) for security policies.
