@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask_wtf.csrf import csrf_exempt
 import secrets
 
 from app import db
@@ -34,23 +35,27 @@ def add_user():
 
 
 @bp.route("/api/items")
+@csrf_exempt
 def api_items():
     items = Item.query.all()
     return jsonify([item.to_dict() for item in items])
 
 
 @bp.route("/api/users")
+@csrf_exempt
 def api_users():
     users = User.query.all()
     return jsonify([user.to_dict() for user in users])
 
 
 @bp.route("/api/health")
+@csrf_exempt
 def health():
     return jsonify({"status": "ok"})
 
 
 @bp.route("/api/song/current")
+@csrf_exempt
 def get_current_song():
     if "session_id" not in session:
         session["session_id"] = secrets.token_hex(16)
@@ -85,6 +90,7 @@ def get_current_song():
 
 
 @bp.route("/api/song/rate", methods=["POST"])
+@csrf_exempt
 def rate_song():
     if "session_id" not in session:
         session["session_id"] = secrets.token_hex(16)
