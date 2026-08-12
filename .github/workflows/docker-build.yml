@@ -266,10 +266,12 @@ jobs:
 - ✅ Image verification (Python, Gunicorn, permissions)
 
 ### Access URLs (when running locally)
-- **Dev**: http://localhost:5000 (Flask + SQLite)
 - **Prod**: http://localhost (Nginx + Gunicorn + PostgreSQL)
 
-Start locally: \`make dev\` or \`make prod\``;
+Start production: \`\`\`make prod\`\`\`
+
+(Set DB_PASSWORD first: \`export DB_PASSWORD=$(openssl rand -base64 32)\`)
+`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
