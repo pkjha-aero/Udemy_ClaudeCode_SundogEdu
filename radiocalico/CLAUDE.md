@@ -143,6 +143,10 @@ For convenience, use `make` to manage the project:
 - `make security` — Run local security analysis (Bandit SAST + Safety dependency check)
 - `make security-docker` — Run full security stack (includes Trivy + Hadolint checks)
 
+**Performance:**
+- `make perf` — Generate performance analysis report (outputs to `PERFORMANCE.md`)
+- `make perf-commit` — Generate performance report and commit it to git
+
 **Utilities:**
 - `make build` — Build all Docker images
 - `make logs-dev` — View development logs

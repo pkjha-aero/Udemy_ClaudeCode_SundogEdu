@@ -1,4 +1,4 @@
-.PHONY: help setup dev prod stop logs test test-coverage security build clean
+.PHONY: help setup dev prod stop logs test test-coverage security build clean perf perf-commit
 
 # Variables
 VENV_DIR := venv
@@ -35,6 +35,10 @@ help: ## Show this help message
 	@echo "  make security       - Run local security analysis (Bandit, Safety)"
 	@echo "  make security-docker - Run full security stack in Docker"
 	@echo ""
+	@echo "$(GREEN)Performance:$(NC)"
+	@echo "  make perf           - Generate performance analysis report (PERFORMANCE.md)"
+	@echo "  make perf-commit    - Generate report and commit it to git"
+	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make logs-dev       - View development logs"
 	@echo "  make logs-prod      - View production logs"
@@ -46,6 +50,8 @@ help: ## Show this help message
 	@echo "$(GREEN)Examples:$(NC)"
 	@echo "  make test && make dev             - Run tests then start dev"
 	@echo "  make security                     - Run local security analysis"
+	@echo "  make perf                         - Generate performance report"
+	@echo "  make perf-commit                  - Generate and commit performance report"
 	@echo "  DB_PASSWORD=mysecret make prod    - Start prod with custom DB password"
 	@echo "  make test && make security        - Test and verify security"
 
@@ -259,6 +265,26 @@ clean-db: ## Remove database files (development only)
 	@echo "$(BLUE)Removing database files...$(NC)"
 	rm -f instance/radiocalico.db
 	@echo "$(GREEN)✅ Database files removed$(NC)"
+
+## Performance Analysis
+
+perf: ## Generate performance analysis report (PERFORMANCE.md)
+	@echo "$(BLUE)📊 Generating performance analysis report...$(NC)"
+	@$(PYTHON) ../.github/scripts/generate_perf_report.py
+	@echo ""
+	@echo "$(GREEN)✅ Report complete!$(NC)"
+	@echo "   File: PERFORMANCE.md"
+	@echo "   Review the recommendations and prioritize optimizations"
+
+perf-commit: perf ## Generate performance report and commit it
+	@echo "$(BLUE)📝 Committing performance report...$(NC)"
+	@if git diff --quiet PERFORMANCE.md 2>/dev/null && ! git ls-files --others --exclude-standard | grep -q PERFORMANCE.md; then \
+		echo "$(YELLOW)⚠ No changes to PERFORMANCE.md$(NC)"; \
+	else \
+		git add PERFORMANCE.md && \
+		git commit -m "docs: Update performance analysis report" && \
+		echo "$(GREEN)✅ Performance report committed$(NC)" || echo "$(YELLOW)⚠ No changes to commit$(NC)"; \
+	fi
 
 ## Quick Workflows
 
