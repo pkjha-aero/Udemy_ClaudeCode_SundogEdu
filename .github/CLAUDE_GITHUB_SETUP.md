@@ -178,7 +178,35 @@ concise helps, since Claude reads it on every run.
 - The commenting user needs **write access** to the repository
 - Bot actors are rejected by default (prevents loops); allow specific ones with `allowed_bots`
 
-**Authentication errors**
+**Authentication errors / the job finishes in ~10s having done nothing**
+
+First check the **exact secret name**. It must be `CLAUDE_CODE_OAUTH_TOKEN` —
+note the **`O`** in `OAUTH`. A near-miss like `CLAUDE_CODE_AUTH_TOKEN` does not error:
+`${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}` silently resolves to an empty string, the action
+starts with no credential, and the job exits almost immediately looking like a pass.
+
+Confirm what the repository actually has:
+
+```bash
+gh secret list --repo pkjha-aero/Udemy_ClaudeCode_SundogEdu
+```
+
+To diagnose from a run log, expand the action's step and look at the `with:` block. If
+`claude_code_oauth_token` is **absent from the listed inputs**, the secret name is wrong or
+the secret does not exist. GitHub redacts a populated secret as `***`, so a correctly-named
+secret still appears in that list.
+
+Secrets cannot be renamed in place — add one under the correct name, then delete the old:
+
+```bash
+gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo pkjha-aero/Udemy_ClaudeCode_SundogEdu
+gh secret delete CLAUDE_CODE_AUTH_TOKEN --repo pkjha-aero/Udemy_ClaudeCode_SundogEdu
+```
+
+Also note: **Actions secrets must be repository-level** (or organization-level). An
+account-level Codespaces secret is not visible to Actions.
+
+Other causes:
 - Verify the token works locally by running `claude` before debugging the workflow
 - Regenerate with `claude setup-token` if it has been revoked or expired
 

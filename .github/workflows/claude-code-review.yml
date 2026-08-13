@@ -5,7 +5,8 @@ name: Claude Code Review
 #
 # Auth: CLAUDE_CODE_OAUTH_TOKEN (Claude Pro subscription, not API credits).
 # Generate the token locally with `claude setup-token`, then add it as a
-# repository secret. See .github/CLAUDE_GITHUB_SETUP.md.
+# repository secret named EXACTLY `CLAUDE_CODE_OAUTH_TOKEN`.
+# See .github/CLAUDE_GITHUB_SETUP.md.
 #
 # WHERE THE FINDINGS GO: the code-review plugin writes its findings to the
 # workflow run log, not as a PR comment. Open the run from the repository's
@@ -25,6 +26,10 @@ on:
       - 'Dockerfile'
       - '.github/workflows/**'
 
+# Deny all permissions by default; the job below grants only what it needs.
+# Required by OpenSSF Scorecard's Token-Permissions check.
+permissions: {}
+
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -37,13 +42,15 @@ jobs:
       id-token: write        # required for the action's GitHub App auth
 
     steps:
+      # Actions pinned to full commit SHAs (OpenSSF Scorecard: Pinned-Dependencies).
+      # Dependabot bumps these weekly via .github/dependabot.yml.
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:
           fetch-depth: 1
 
       - name: Review with Claude
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@e63208cb983318a44e3f945e959ef894b707dcfa  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
