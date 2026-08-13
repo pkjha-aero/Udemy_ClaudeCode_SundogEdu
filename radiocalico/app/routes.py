@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 import secrets
+from sqlalchemy import func
 
 from app import db, csrf
 from app.models import Item, User, Song, Rating
@@ -74,6 +75,16 @@ def get_current_song():
         song_id=song.id, session_id=session["session_id"]
     ).first()
 
+    thumbs_up = db.session.query(func.count(Rating.id)).filter(
+        Rating.song_id == song.id,
+        Rating.is_thumbs_up == True
+    ).scalar() or 0
+
+    thumbs_down = db.session.query(func.count(Rating.id)).filter(
+        Rating.song_id == song.id,
+        Rating.is_thumbs_up == False
+    ).scalar() or 0
+
     return jsonify(
         {
             "id": song.id,
@@ -81,8 +92,8 @@ def get_current_song():
             "artist": song.artist,
             "album": song.album,
             "date": song.date,
-            "thumbs_up": len([r for r in song.ratings if r.is_thumbs_up]),
-            "thumbs_down": len([r for r in song.ratings if not r.is_thumbs_up]),
+            "thumbs_up": thumbs_up,
+            "thumbs_down": thumbs_down,
             "user_rating": "up" if user_rating and user_rating.is_thumbs_up else "down" if user_rating else None,
         }
     )
@@ -119,10 +130,25 @@ def rate_song():
 
     db.session.commit()
 
+    thumbs_up = db.session.query(func.count(Rating.id)).filter(
+        Rating.song_id == song_id,
+        Rating.is_thumbs_up == True
+    ).scalar() or 0
+
+    thumbs_down = db.session.query(func.count(Rating.id)).filter(
+        Rating.song_id == song_id,
+        Rating.is_thumbs_up == False
+    ).scalar() or 0
+
     return jsonify(
         {
-            "thumbs_up": len([r for r in song.ratings if r.is_thumbs_up]),
-            "thumbs_down": len([r for r in song.ratings if not r.is_thumbs_up]),
+            "id": song.id,
+            "title": song.title,
+            "artist": song.artist,
+            "album": song.album,
+            "date": song.date,
+            "thumbs_up": thumbs_up,
+            "thumbs_down": thumbs_down,
             "user_rating": "up" if is_thumbs_up else "down",
         }
     )
