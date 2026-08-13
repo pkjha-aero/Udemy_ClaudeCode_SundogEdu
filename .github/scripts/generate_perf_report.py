@@ -178,10 +178,11 @@ Total: ~30 minutes for 100-150ms improvement 🚀
 def main():
     """Main entry point."""
     try:
-        # Get the project root directory
+        # Get the radiocalico directory
         script_dir = Path(__file__).parent
         project_root = script_dir.parent.parent
-        report_path = project_root / "PERFORMANCE.md"
+        radiocalico_dir = project_root / "radiocalico"
+        report_path = radiocalico_dir / "PERFORMANCE.md"
 
         # Generate the report
         report_content = generate_report()

@@ -64,6 +64,15 @@ make security          # Run security analysis (Bandit + Safety)
 - `make help` — Show all available targets
 - `make test-coverage` — Generate coverage report
 - `make security` — Run local security analysis
+- `make perf` — Generate performance analysis report
 - `make clean` — Clean up containers and cache
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture and development guide. See [DOCKER.md](DOCKER.md) for containerization details. See [API.md](API.md) for REST API documentation. See [SECURITY.md](../SECURITY.md) for security policies.
+## Documentation
+
+- **[CLAUDE.md](CLAUDE.md)** — Architecture, development guide, and troubleshooting
+- **[DOCKER.md](DOCKER.md)** — Containerization and production deployment
+- **[API.md](API.md)** — REST API reference and examples
+- **[PERFORMANCE.md](PERFORMANCE.md)** — Performance analysis and optimization roadmap
+- **[SECURITY.md](../SECURITY.md)** — Security policies and vulnerability disclosure
+- **[CHANGELOG.md](CHANGELOG.md)** — Project version history
+- **[FEATURES.md](FEATURES.md)** — Current features and roadmap

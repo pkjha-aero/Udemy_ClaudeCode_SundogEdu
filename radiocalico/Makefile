@@ -278,8 +278,7 @@ perf: ## Generate performance analysis report (PERFORMANCE.md)
 
 perf-commit: perf ## Generate performance report and commit it
 	@echo "$(BLUE)📝 Committing performance report...$(NC)"
-	@cd .. && \
-	if git diff --quiet PERFORMANCE.md 2>/dev/null && ! git ls-files --others --exclude-standard | grep -q PERFORMANCE.md; then \
+	@if git diff --quiet PERFORMANCE.md 2>/dev/null && ! git ls-files --others --exclude-standard | grep -q PERFORMANCE.md; then \
 		echo "$(YELLOW)⚠ No changes to PERFORMANCE.md$(NC)"; \
 	else \
 		git add PERFORMANCE.md && \
