@@ -223,6 +223,27 @@ Other causes:
 
 ---
 
+## Security posture (OpenSSF Scorecard)
+
+Both workflows are hardened against Scorecard's supply-chain checks:
+
+- **Workflow-level `permissions: {}`** — deny-all by default; each job grants only what it
+  needs (`Token-Permissions`)
+- **Actions pinned to full commit SHAs** rather than moving tags (`Pinned-Dependencies`).
+  Dependabot bumps them weekly via `.github/dependabot.yml`, so pinning does not strand
+  them on stale versions
+
+**One accepted risk:** `claude.yml` grants `contents: write` at the job level, which
+Scorecard rates high (a compromised action could push code). It is required — without it
+Claude can only comment and cannot implement requested changes, which is the entire point
+of the interactive workflow. Anthropic's own reference workflow uses the same grant.
+
+[Alert #773](https://github.com/pkjha-aero/Udemy_ClaudeCode_SundogEdu/security/code-scanning/773)
+is dismissed as *won't fix* with that rationale recorded. If you later decide Claude should
+be analysis-only, narrow it to `contents: read` and reopen the alert.
+
+---
+
 ## Team / organization note
 
 An OAuth token is tied to the subscription of whoever ran `claude setup-token`. If runs
