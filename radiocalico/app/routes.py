@@ -1,12 +1,37 @@
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for, make_response
 import secrets
 from sqlalchemy import func
+from functools import wraps
 
 from app import db, csrf
 from app.models import Item, User, Song, Rating
 from app.template_helpers import prepare_index_context
 
 bp = Blueprint("main", __name__)
+
+
+def add_cache_headers(max_age=3600):
+    """Decorator to add Cache-Control headers to responses."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            response = make_response(f(*args, **kwargs))
+            response.headers["Cache-Control"] = f"public, max-age={max_age}"
+            return response
+        return decorated_function
+    return decorator
+
+
+def add_api_cache_headers(max_age=30):
+    """Decorator to add Cache-Control headers to API responses."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            response = make_response(f(*args, **kwargs))
+            response.headers["Cache-Control"] = f"private, max-age={max_age}"
+            return response
+        return decorated_function
+    return decorator
 
 
 @bp.route("/")
@@ -36,6 +61,7 @@ def add_user():
 
 @bp.route("/api/items")
 @csrf.exempt
+@add_api_cache_headers(max_age=300)
 def api_items():
     items = Item.query.all()
     return jsonify([item.to_dict() for item in items])
@@ -43,6 +69,7 @@ def api_items():
 
 @bp.route("/api/users")
 @csrf.exempt
+@add_api_cache_headers(max_age=300)
 def api_users():
     users = User.query.all()
     return jsonify([user.to_dict() for user in users])
@@ -50,12 +77,14 @@ def api_users():
 
 @bp.route("/api/health")
 @csrf.exempt
+@add_api_cache_headers(max_age=30)
 def health():
     return jsonify({"status": "ok"})
 
 
 @bp.route("/api/song/current")
 @csrf.exempt
+@add_api_cache_headers(max_age=30)
 def get_current_song():
     if "session_id" not in session:
         session["session_id"] = secrets.token_hex(16)
