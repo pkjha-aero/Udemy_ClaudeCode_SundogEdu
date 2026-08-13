@@ -65,6 +65,8 @@ make security          # Run security analysis (Bandit + Safety)
 - `make test-coverage` — Generate coverage report
 - `make security` — Run local security analysis
 - `make perf` — Generate performance analysis report
+- `make minify` — Minify CSS and HTML assets (20% reduction)
+- `make minify-watch` — Auto-minify on file changes
 - `make clean` — Clean up containers and cache
 
 ## Documentation
@@ -72,6 +74,7 @@ make security          # Run security analysis (Bandit + Safety)
 - **[CLAUDE.md](CLAUDE.md)** — Architecture, development guide, and troubleshooting
 - **[DOCKER.md](DOCKER.md)** — Containerization and production deployment
 - **[API.md](API.md)** — REST API reference and examples
+- **[MINIFICATION.md](MINIFICATION.md)** — Asset minification and optimization
 - **[PERFORMANCE.md](PERFORMANCE.md)** — Performance analysis and optimization roadmap
 - **[SECURITY.md](../SECURITY.md)** — Security policies and vulnerability disclosure
 - **[CHANGELOG.md](CHANGELOG.md)** — Project version history

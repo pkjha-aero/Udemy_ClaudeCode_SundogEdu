@@ -55,6 +55,7 @@ Overview of Radio Calico's current capabilities and planned enhancements.
 - **Comprehensive Testing** - 164 unit tests, 88% coverage
 - **Security Scanning** - 7-tool automated analysis (Bandit, Safety, Trivy, etc.)
 - **CI/CD Pipeline** - Automated testing, code review, builds
+- **Asset Minification** - Automatic CSS/HTML compression (20% reduction, 2.7 KB saved)
 - **Makefile Targets** - One-command dev/test/prod operations
 
 ### Documentation

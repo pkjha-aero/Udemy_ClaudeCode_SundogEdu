@@ -1,69 +1,4 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Radio Calico - Stream Player</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='player.css') }}">
-</head>
-<body>
-  <div class="header">
-    <h1>
-      <div class="header-logo">
-        <img src="{{ url_for('static', filename='radiocalico_logo.png') }}" alt="Radio Calico Logo">
-      </div>
-      Radio Calico
-    </h1>
-  </div>
-
-  <div class="container">
-    <div class="now-playing">
-      <div class="album-cover" id="albumCover">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-          <rect width="400" height="400" fill="#38A29D"/>
-          <text x="200" y="200" font-size="48" fill="white" text-anchor="middle" dominant-baseline="middle">Loading...</text>
-        </svg>
-      </div>
-      <div class="track-info">
-        <div class="track-artist" id="trackArtist">Loading...</div>
-        <div class="track-title" id="trackTitle"></div>
-        <div class="track-album" id="trackAlbum"></div>
-        <div class="track-specs" id="trackSpecs"></div>
-
-        <div class="rating-label">Rate this track:</div>
-        <div class="rating-section" id="ratingSection" style="display:none;">
-          <button class="rating-button" id="thumbsUpBtn" onclick="rateTrack(true)">
-            👍 <span class="rating-count" id="thumbsUpCount">0</span>
-          </button>
-          <button class="rating-button" id="thumbsDownBtn" onclick="rateTrack(false)">
-            👎 <span class="rating-count" id="thumbsDownCount">0</span>
-          </button>
-        </div>
-
-        <div class="player-wrapper">
-          <button class="player-button" id="playBtn" onclick="togglePlay()">▶️</button>
-          <div class="player-time"><span id="currentTime">0:00</span> / Live</div>
-          <div class="player-volume">
-            <span class="player-volume-icon">🔊</span>
-            <input type="range" min="0" max="100" value="100" id="volumeControl" onchange="setVolume(this.value)">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="recently-played">
-      <h2>Previous tracks:</h2>
-      <div id="recentlyPlayedContent" class="loading">Loading...</div>
-    </div>
-  </div>
-
-  <audio id="audioPlayer" preload="auto"></audio>
-
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-  <script>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width, initial-scale=1"><title>Radio Calico - Stream Player</title><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400&display=swap" rel=stylesheet><link rel=stylesheet href="{{ url_for('static', filename='player.css') }}"></head><body><div class=header><h1><div class=header-logo><img src="{{ url_for('static', filename='radiocalico_logo.png') }}" alt="Radio Calico Logo"></div> Radio Calico </h1></div><div class=container><div class=now-playing><div class=album-cover id=albumCover><svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 400 400" width=400 height=400><rect width=400 height=400 fill=#38A29D /><text x=200 y=200 font-size=48 fill=white text-anchor=middle dominant-baseline=middle>Loading...</text></svg></div><div class=track-info><div class=track-artist id=trackArtist>Loading...</div><div class=track-title id=trackTitle></div><div class=track-album id=trackAlbum></div><div class=track-specs id=trackSpecs></div><div class=rating-label>Rate this track:</div><div class=rating-section id=ratingSection style=display:none;><button class=rating-button id=thumbsUpBtn onclick=rateTrack(true)> 👍 <span class=rating-count id=thumbsUpCount>0</span></button><button class=rating-button id=thumbsDownBtn onclick=rateTrack(false)> 👎 <span class=rating-count id=thumbsDownCount>0</span></button></div><div class=player-wrapper><button class=player-button id=playBtn onclick=togglePlay()>▶️</button><div class=player-time><span id=currentTime>0:00</span> / Live</div><div class=player-volume><span class=player-volume-icon>🔊</span><input type=range min=0 max=100 value=100 id=volumeControl onchange=setVolume(this.value)></div></div></div></div><div class=recently-played><h2>Previous tracks:</h2><div id=recentlyPlayedContent class=loading>Loading...</div></div></div><audio id=audioPlayer preload=auto></audio><script src=https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js></script><script>
     const STREAM_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/hls/live.m3u8';
     const METADATA_URL = 'https://d3d4yli4hf5bmh.cloudfront.net/metadatav2.json';
     const audio = document.getElementById('audioPlayer');
@@ -282,6 +217,4 @@
       volumeControl.value = 100;
       setVolume(100);
     });
-  </script>
-</body>
-</html>
+  </script></body></html>

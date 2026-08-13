@@ -124,13 +124,18 @@ For convenience, use `make` to manage the project:
 - `make dev-clean` — Clean and restart dev environment
 - `make setup` — Install dependencies in virtual environment
 
+**Asset Optimization:**
+- `make minify` — Minify CSS and HTML assets once (20% reduction on CSS, 5-22% on HTML)
+- `make minify-watch` — Auto-minify CSS/HTML on file changes (watch mode for active development)
+- **Note:** Minification runs automatically in Docker builds (dev and prod); these targets are for pre-commit optimization
+
 **Production:**
 - `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) **Requires DB_PASSWORD env var**
   ```bash
   export DB_PASSWORD=$(openssl rand -base64 32)
   make prod
   ```
-- `make prod-build` — Build production Docker images
+- `make prod-build` — Build production Docker images (includes minification)
 - `make prod-stop` — Stop production stack
 
 **Testing:**
@@ -459,6 +464,10 @@ GitHub Actions workflows do NOT call `make security` because:
   - ✅ Gzip compression (100-200ms, 60-70% size reduction)
   - ✅ HTTP cache headers (200-400ms on repeat visits)
   - ✅ CSS code split (27KB HTML → 4KB + 9.4KB CSS file)
+  - ✅ Asset minification (CSS 20%, HTML 5-22%, 2.7 KB saved)
+    - Automatic in Docker builds (dev/prod)
+    - Manual: `make minify` or `make minify-watch`
+    - See [MINIFICATION.md](MINIFICATION.md) for details
 
 ## Production Deployment
 

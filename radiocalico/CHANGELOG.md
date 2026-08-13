@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Development environment template (.env.development.example)
 - CHANGELOG.md for tracking project evolution
 - FEATURES.md documenting current and planned capabilities
+- Automatic asset minification (CSS 20%, HTML 5-22% reduction)
+  - `make minify` — Minify assets once
+  - `make minify-watch` — Auto-minify on file changes (watch mode)
+  - Integrated into Docker builds (dev and prod stages)
+  - New: MINIFICATION.md documentation and scripts/minify.py
 
 ### Fixed
 - Track rating functionality restored by exempting JSON API endpoints from CSRF protection
@@ -22,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 - DOCKER.md moved from docker_doc/ to radiocalico/ root for better accessibility
+- Asset minification now runs automatically in Docker builds (no user action needed)
 
 ---
 
