@@ -327,30 +327,37 @@ git push                  # GitHub Actions will run automatically
 
 **CI/CD:** Automated testing, code review, and containerization on every PR:
 - `.github/workflows/tests.yml` — Pytest suite with 88% coverage gate (requires PYTHONPATH=. for module resolution)
-- `.github/workflows/claude-code-review.yml` — AI code review (Claude Haiku 4.5)
+- `.github/workflows/claude-code-review.yml` — AI code review (Claude Opus 5)
 - `.github/workflows/docker-build.yml` — Docker image builds + smoke tests
-- `.github/scripts/` — Standalone Python scripts for code review, issue analysis, doc generation (Haiku 4.5)
+- `.github/scripts/generate_perf_report.py` — Performance report generator (pure Python, no Claude; run via `make perf`)
 
 ## GitHub Automation & Claude Integration
 
-The repository includes AI-powered automation using Claude Haiku 4.5 for cost-effective intelligent workflows:
+Claude automation runs on **Claude Opus 5** via the official
+[`anthropics/claude-code-action@v1`](https://github.com/anthropics/claude-code-action),
+authenticated with a `CLAUDE_CODE_OAUTH_TOKEN` repository secret so usage bills against a
+**Claude Pro subscription rather than API credits**.
 
-**Workflows triggered on PR:**
-- **Code Review** — Claude analyzes diffs for bugs, quality, security, performance, test coverage
-- **Docker Build & Test** — Builds and smoke-tests dev/prod images on containerization changes
-- **Unit Tests** — Pytest with 88% coverage gate (blocks merge if fails)
+**Setup:** See [`.github/CLAUDE_GITHUB_SETUP.md`](../.github/CLAUDE_GITHUB_SETUP.md) for
+token generation (`claude setup-token`), GitHub App installation, and troubleshooting.
 
-**Issue & Comment Automation:**
-- **@claude mentions** — Respond to `@claude` in PR/issue comments (`.github/workflows/claude.yml`)
-- **Issue Analysis** — Auto-classify bugs/features, suggest priority (`.github/scripts/process_issues.py`)
-- **Code Review Script** — Standalone script for detailed PR review (`.github/scripts/claude_code_review.py`)
-- **Doc Generation** — Auto-generate API docs from codebase (`.github/scripts/generate_docs.py`)
+**Workflows:**
+- **`claude.yml`** (interactive) — responds to `@claude` in issues, PR comments, reviews, and new issues. Output: a comment on the issue/PR.
+- **`claude-code-review.yml`** (automation) — runs the `code-review` plugin on every PR touching code paths. Output: the **Actions run log**, not a PR comment.
 
-**Why Claude Haiku 4.5:**
-- 90% cheaper than Opus 5 (~$0.08/month vs $0.60/month)
-- Sufficient for all automation tasks: code quality, classification, analysis
-- Faster responses (better for CI/CD workflows)
-- Can upgrade to Opus 5 for complex architectural reviews
+**Non-Claude workflows:** `tests.yml`, `security.yml`, `scorecard.yml`, `docker-build.yml`
+require no Claude credentials.
+
+**Why `CLAUDE_CODE_OAUTH_TOKEN` and not `ANTHROPIC_API_KEY`:**
+- An OAuth token bills the Pro subscription; an API key bills API credits
+- It is **not** a drop-in swap — the token only works with `claude-code-action` or the
+  Claude Code CLI, never with the raw `anthropic` Python SDK
+- The token is tied to the subscription of whoever ran `claude setup-token`; for shared or
+  org-wide use, prefer an API key or workload identity federation
+
+**Cost controls in place:** `timeout-minutes: 20` on both jobs, `--max-turns 15` on the
+responder, `paths:` filters on the reviewer, and an `if:` guard that avoids starting a
+runner for comments without `@claude`.
 
 ## Security
 

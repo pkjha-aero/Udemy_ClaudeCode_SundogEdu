@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+- **Claude GitHub automation migrated to Opus 5 on Pro subscription billing**
+  - Replaced hand-rolled `anthropic` SDK calls with official `anthropics/claude-code-action@v1`
+  - Auth switched from `ANTHROPIC_API_KEY` (API credits) to `CLAUDE_CODE_OAUTH_TOKEN` (Pro subscription)
+  - Model upgraded from `claude-haiku-4-5-20251001` to `claude-opus-5`
+  - Rationale: the OAuth token is a Claude Code credential, not an API key — it cannot be
+    passed to the raw `anthropic` SDK, so subscription billing required the official action
+  - Removed duplicate PR review (both `claude-code-review.yml` and `claude-integration.yml`
+    were reviewing every PR, costing two Claude calls per PR)
+  - Deleted: `claude-integration.yml`, `validate-claude-integration.yml`,
+    `claude_code_review.py`, `process_issues.py`, `generate_docs.py`, `CLAUDE_INTEGRATION_SETUP.md`
+  - Retained: `generate_perf_report.py` (pure Python, no Claude dependency)
+  - **Behaviour change:** PR review findings now appear in the Actions run log rather than
+    as a PR comment
+  - New setup guide: `.github/CLAUDE_GITHUB_SETUP.md`
+
 ### Added
 - High-priority documentation: API.md with complete REST endpoint reference
 - System Architecture documentation: ARCHITECTURE.md with 9 Mermaid diagrams
