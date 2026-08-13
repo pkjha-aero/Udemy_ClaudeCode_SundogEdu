@@ -145,27 +145,42 @@ No port conflicts, no state issues. Each mode has its own containers/processes.
 
 ## Building Images
 
+**⚡ Auto-Build vs. Explicit Build:**
+- `make dev` — Auto-builds image if missing (recommended for normal development)
+- `make build` — Always builds both images explicitly (when you need guaranteed fresh builds)
+
+For complete guide on when to build images and what triggers rebuilds, see **[DOCKER-IMAGE-MANAGEMENT.md](DOCKER-IMAGE-MANAGEMENT.md)**.
+
 ### Build both dev and prod images
 
 ```bash
-./docker-build.sh
+# Using Makefile (recommended)
+make build
 
-# With custom version
-./docker-build.sh v1.0.0
+# Using docker build directly
+docker build --target=dev -t radiocalico:dev .
+docker build --target=prod -t radiocalico:prod .
 
-# With custom registry
-./docker-build.sh v1.0.0 docker.io/yourorg
+# With cache disabled (fresh build)
+docker build --no-cache --target=dev -t radiocalico:dev .
+docker build --no-cache --target=prod -t radiocalico:prod .
 ```
 
-### Build individually
+### Build individual images
 
 ```bash
 # Development image only
+make build-dev
+# or
 docker build --target=dev -t radiocalico:dev .
 
 # Production image only
+make build-prod
+# or
 docker build --target=prod -t radiocalico:prod .
 ```
+
+**When to use explicit build:** After changing `requirements.txt`, `Dockerfile`, Python version, or base image. See [DOCKER-IMAGE-MANAGEMENT.md](DOCKER-IMAGE-MANAGEMENT.md) for complete decision tree.
 
 ### View built images
 

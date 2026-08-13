@@ -23,6 +23,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Make targets: `make arch`, `make arch-html`
   - Viewing guide: ARCHITECTURE-VIEWING-GUIDE.md (setup, troubleshooting, FAQ)
   - **Important:** No build dependencies, works with clean/edited builds, mermaid-cli is optional
+- Docker Image Management documentation: DOCKER-IMAGE-MANAGEMENT.md
+  - Clear explanation: auto-build vs. explicit build commands
+  - When to build new images (requirements.txt, Dockerfile, dependencies change)
+  - Detailed behavior matrix for all make/docker commands
+  - Common workflows and decision tree
+  - CI/CD best practices
+  - Troubleshooting guide
+  - Make targets clarified: `make dev/prod` (⚡ auto-build), `make build-*` (🔨 explicit)
+- Database Management documentation: DATABASE-MANAGEMENT.md
+  - When to clean up databases (decision tree included)
+  - SQLite (dev) vs PostgreSQL (prod) management
+  - Backup and restore procedures
+  - Common workflows and troubleshooting
+  - Best practices for dev, prod, and CI/CD
+  - New make targets: `make db-*` for managing databases
+  - Status commands: `make db-status`, `make db-status-dev`, `make db-status-prod`
+  - Backup commands: `make db-backup`, `make db-backup-dev`, `make db-backup-prod`
+  - Clean/reset commands: `make db-clean-*`, `make db-reset-*`, `make db-restore-prod`
 - Development environment template (.env.development.example)
 - CHANGELOG.md for tracking project evolution
 - FEATURES.md documenting current and planned capabilities

@@ -1,4 +1,4 @@
-.PHONY: help setup minify minify-watch arch arch-html dev prod stop logs test test-coverage security build clean perf perf-commit
+.PHONY: help setup minify minify-watch arch arch-html dev prod stop logs test test-coverage security build clean perf perf-commit db-init-dev db-clean-dev db-reset-dev db-backup-dev db-status-dev db-init-prod db-clean-prod db-reset-prod db-backup-prod db-restore-prod db-status-prod db-status db-backup db-help
 
 # Variables
 VENV_DIR := venv
@@ -46,6 +46,11 @@ help: ## Show this help message
 	@echo "$(GREEN)Performance:$(NC)"
 	@echo "  make perf           - Generate performance analysis report (PERFORMANCE.md)"
 	@echo "  make perf-commit    - Generate report and commit it to git"
+	@echo ""
+	@echo "$(GREEN)Database Management:$(NC)"
+	@echo "  make db-status      - Show database status (dev and prod)"
+	@echo "  make db-backup      - Backup both databases"
+	@echo "  make db-help        - Show all database commands"
 	@echo ""
 	@echo "$(GREEN)Utilities:$(NC)"
 	@echo "  make logs-dev       - View development logs"
@@ -306,6 +311,191 @@ build-prod: ## Build production Docker image only
 	@echo "$(BLUE)Building production image...$(NC)"
 	docker build --target=prod -t radiocalico:prod .
 	@echo "$(GREEN)✅ Production image built$(NC)"
+
+## Database Management
+
+db-help: ## Show all database commands
+	@echo "$(BLUE)Database Management - Radio Calico$(NC)"
+	@echo ""
+	@echo "$(GREEN)Development (SQLite):$(NC)"
+	@echo "  make db-init-dev    - Initialize dev database (manual)"
+	@echo "  make db-clean-dev   - Remove dev database (hard delete)"
+	@echo "  make db-reset-dev   - Clean + reinitialize (fresh start)"
+	@echo "  make db-backup-dev  - Backup dev database"
+	@echo "  make db-status-dev  - Show dev database status"
+	@echo ""
+	@echo "$(GREEN)Production (PostgreSQL):$(NC)"
+	@echo "  make db-init-prod    - Initialize prod database (manual)"
+	@echo "  make db-clean-prod   - Remove prod database (hard delete)"
+	@echo "  make db-reset-prod   - Clean + reinitialize (fresh start)"
+	@echo "  make db-backup-prod  - Backup prod database"
+	@echo "  make db-restore-prod - Restore from backup (BACKUP=file.sql)"
+	@echo "  make db-status-prod  - Show prod database status"
+	@echo ""
+	@echo "$(GREEN)Both:$(NC)"
+	@echo "  make db-status      - Show status of both databases"
+	@echo "  make db-backup      - Backup both databases"
+	@echo ""
+	@echo "$(GREEN)When to clean:$(NC)"
+	@echo "  • Testing (want fresh data)"
+	@echo "  • Schema changes (models.py updated)"
+	@echo "  • Data corruption (invalid state)"
+	@echo "  • Production reset (complete wipe)"
+	@echo ""
+	@echo "See DATABASE-MANAGEMENT.md for complete guide"
+	@echo ""
+
+# Development Database (SQLite)
+
+db-init-dev: ## Initialize development database (manual)
+	@echo "$(BLUE)Initializing development database...$(NC)"
+	@if [ -f instance/radiocalico.db ]; then \
+		echo "$(YELLOW)⚠️  Database already exists at instance/radiocalico.db$(NC)"; \
+		exit 1; \
+	fi
+	$(PYTHON) -c "from app import create_app; create_app().app_context().push(); from flask_sqlalchemy import SQLAlchemy; print('Database initialized')"
+	@echo "$(GREEN)✅ Development database initialized$(NC)"
+
+db-clean-dev: ## Remove development database (hard delete)
+	@echo "$(BLUE)Removing development database...$(NC)"
+	@if [ ! -f instance/radiocalico.db ]; then \
+		echo "$(YELLOW)⚠️  Database not found (already removed)$(NC)"; \
+		exit 0; \
+	fi
+	@echo "$(YELLOW)⚠️  This will DELETE all development data$(NC)"
+	@read -p "Continue? (y/N) " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -f instance/radiocalico.db && echo "$(GREEN)✅ Database removed$(NC)"; \
+	else \
+		echo "$(YELLOW)Cancelled$(NC)"; \
+	fi
+
+db-reset-dev: ## Clean and reinitialize development database (fresh start)
+	@echo "$(BLUE)Resetting development database...$(NC)"
+	make db-clean-dev
+	make dev
+
+db-backup-dev: ## Backup development database
+	@echo "$(BLUE)Backing up development database...$(NC)"
+	@if [ ! -f instance/radiocalico.db ]; then \
+		echo "$(YELLOW)⚠️  Database not found, nothing to backup$(NC)"; \
+		exit 1; \
+	fi
+	cp instance/radiocalico.db instance/radiocalico.db-backup
+	@echo "$(GREEN)✅ Backup created: instance/radiocalico.db-backup$(NC)"
+
+db-status-dev: ## Show development database status
+	@echo "$(BLUE)Development Database Status:$(NC)"
+	@if [ -f instance/radiocalico.db ]; then \
+		echo "$(GREEN)✓ Database exists$(NC)"; \
+		ls -lh instance/radiocalico.db | awk '{print "  Size: " $$5}'; \
+		stat -f "  Modified: %Sm" instance/radiocalico.db 2>/dev/null || stat -c "  Modified: %y" instance/radiocalico.db 2>/dev/null; \
+		echo "$(YELLOW)Note: Use sqlite3 to inspect data$(NC)"; \
+		echo "  sqlite3 instance/radiocalico.db '.tables'"; \
+	else \
+		echo "$(YELLOW)⚠️  Database not found (will be created on next 'make dev')$(NC)"; \
+	fi
+	@echo ""
+
+# Production Database (PostgreSQL)
+
+db-init-prod: ## Initialize production database (manual)
+	@if [ -z "$(DB_PASSWORD_ENV)" ]; then \
+		echo "$(YELLOW)⚠️  ERROR: DB_PASSWORD environment variable required$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Initializing production database...$(NC)"
+	@docker exec radiocalico-postgres psql -U radiocalico -c "SELECT version();" > /dev/null 2>&1 && \
+		echo "$(YELLOW)⚠️  Database already exists$(NC)" || \
+		(echo "$(GREEN)✅ PostgreSQL ready$(NC)" && echo "Database initializes automatically on first start")
+
+db-clean-prod: ## Remove production database (hard delete)
+	@echo "$(BLUE)Removing production database...$(NC)"
+	@echo "$(YELLOW)⚠️  This will DELETE all production data (irreversible!)$(NC)"
+	@read -p "Continue? (y/N) " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		$(DOCKER_COMPOSE_PROD) down > /dev/null 2>&1; \
+		docker volume rm radiocalico_radiocalico-db 2>/dev/null && \
+			echo "$(GREEN)✅ Production database removed$(NC)" || \
+			echo "$(YELLOW)⚠️  Volume already removed$(NC)"; \
+	else \
+		echo "$(YELLOW)Cancelled$(NC)"; \
+	fi
+
+db-reset-prod: ## Clean and reinitialize production database (fresh start)
+	@echo "$(BLUE)Resetting production database...$(NC)"
+	make db-clean-prod
+	@if [ -z "$(DB_PASSWORD_ENV)" ]; then \
+		echo "$(YELLOW)Set DB_PASSWORD environment variable first$(NC)"; \
+		exit 1; \
+	fi
+	make prod
+
+db-backup-prod: ## Backup production database
+	@echo "$(BLUE)Backing up production database...$(NC)"
+	@mkdir -p backups
+	@BACKUP_FILE="backups/prod-$$(date +%Y-%m-%d-%H-%M-%S).sql"; \
+	docker exec radiocalico-postgres pg_dump -U radiocalico radiocalico > $$BACKUP_FILE 2>/dev/null && \
+		echo "$(GREEN)✅ Backup created: $$BACKUP_FILE$(NC)" || \
+		(rm -f $$BACKUP_FILE && echo "$(YELLOW)⚠️  PostgreSQL not running, cannot backup$(NC)" && exit 1)
+
+db-restore-prod: ## Restore production database from backup (BACKUP=file.sql)
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "$(YELLOW)Usage: make db-restore-prod BACKUP=backups/prod-2026-08-12.sql$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(BACKUP)" ]; then \
+		echo "$(YELLOW)⚠️  Backup file not found: $(BACKUP)$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Restoring production database from: $(BACKUP)$(NC)"
+	@echo "$(YELLOW)⚠️  This will restore data from backup (overwrites current)$(NC)"
+	@read -p "Continue? (y/N) " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		if docker ps | grep -q radiocalico-postgres; then \
+			docker exec -i radiocalico-postgres psql -U radiocalico radiocalico < "$(BACKUP)" && \
+				echo "$(GREEN)✅ Database restored$(NC)" || \
+				echo "$(YELLOW)⚠️  Restore failed$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  PostgreSQL not running, start production first: make prod$(NC)"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "$(YELLOW)Cancelled$(NC)"; \
+	fi
+
+db-status-prod: ## Show production database status
+	@echo "$(BLUE)Production Database Status:$(NC)"
+	@if docker ps | grep -q radiocalico-postgres; then \
+		echo "$(GREEN)✓ PostgreSQL container running$(NC)"; \
+		docker exec radiocalico-postgres pg_isready -U radiocalico > /dev/null && \
+			echo "$(GREEN)✓ Database responsive$(NC)" || \
+			echo "$(YELLOW)⚠️  Database not responding$(NC)"; \
+		docker volume inspect radiocalico_radiocalico-db 2>/dev/null | grep -q "radiocalico" && \
+			echo "$(GREEN)✓ Volume exists: radiocalico_radiocalico-db$(NC)" || \
+			echo "$(YELLOW)⚠️  Volume not found$(NC)"; \
+		VOLUME_SIZE=$$(docker volume inspect -f "{{.Mountpoint}}" radiocalico_radiocalico-db 2>/dev/null | xargs du -sh 2>/dev/null | awk '{print $$1}'); \
+		[ -n "$$VOLUME_SIZE" ] && echo "  Size: $$VOLUME_SIZE" || echo "  Size: unknown"; \
+	else \
+		echo "$(YELLOW)⚠️  PostgreSQL not running$(NC)"; \
+		echo "  Start with: make prod"; \
+	fi
+	@echo ""
+
+# Universal Database Commands
+
+db-status: ## Show status of both databases
+	@make db-status-dev
+	@make db-status-prod
+
+db-backup: ## Backup both databases
+	@echo "$(BLUE)Backing up all databases...$(NC)"
+	@make db-backup-dev 2>/dev/null || true
+	@make db-backup-prod 2>/dev/null || true
+	@echo "$(GREEN)✅ Backup operations complete$(NC)"
 
 ## Cleanup
 
