@@ -71,6 +71,11 @@ make security          # Run security analysis (Bandit + Safety)
 
 ## Documentation
 
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — System design diagrams (9 Mermaid diagrams, rendered automatically)
+  - Data flow, components, deployment topology, database schema, security
+  - No installation required — view on GitHub, VS Code, or [Mermaid Live Editor](https://mermaid.live/)
+  - Optional: `make arch-html` to export diagrams (requires mermaid-cli, not needed for dev/prod)
+- **[ARCHITECTURE-VIEWING-GUIDE.md](ARCHITECTURE-VIEWING-GUIDE.md)** — How to view and export diagrams (complete reference)
 - **[CLAUDE.md](CLAUDE.md)** — Architecture, development guide, and troubleshooting
 - **[DOCKER.md](DOCKER.md)** — Containerization and production deployment
 - **[API.md](API.md)** — REST API reference and examples

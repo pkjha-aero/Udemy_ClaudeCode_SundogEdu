@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 - High-priority documentation: API.md with complete REST endpoint reference
+- System Architecture documentation: ARCHITECTURE.md with 9 Mermaid diagrams
+  - High-level architecture (external services, layers, infrastructure)
+  - Component architecture (presentation, application, data layers)
+  - Data flow (user rating workflow sequence diagram)
+  - Docker deployment topology
+  - API endpoints and response data
+  - Database schema (ER diagram with relationships)
+  - Performance optimization layers
+  - Deployment environments (dev → prod progression)
+  - Security architecture (9-layer defense in depth)
+  - Make targets: `make arch`, `make arch-html`
+  - Viewing guide: ARCHITECTURE-VIEWING-GUIDE.md (setup, troubleshooting, FAQ)
+  - **Important:** No build dependencies, works with clean/edited builds, mermaid-cli is optional
 - Development environment template (.env.development.example)
 - CHANGELOG.md for tracking project evolution
 - FEATURES.md documenting current and planned capabilities
