@@ -55,6 +55,39 @@ Accessible at: http://127.0.0.1 or http://localhost
 
 ## Architecture
 
+**System Design:** See [ARCHITECTURE.md](ARCHITECTURE.md) for comprehensive Mermaid diagrams covering:
+- High-level system architecture
+- Component interactions and data flow
+- Docker deployment topology
+- Database schema (ER diagram)
+- API endpoints
+- Security layers
+- Performance optimization
+- Deployment environments
+
+**Viewing Architecture Diagrams:**
+
+✅ **Works out of the box (no installation):**
+- GitHub repository — Mermaid diagrams render automatically
+- VS Code — Install "Markdown Preview Mermaid Support" extension
+- GitLab, Gitea — Native Mermaid support
+- [Mermaid Live Editor](https://mermaid.live/) — Copy/paste diagram code online
+
+🔧 **Optional export to images** (for presentations, exports):
+- Install: `npm install -g @mermaid-js/mermaid-cli`
+- Export: `make arch-html` or `mmdc -i ARCHITECTURE.md -o ARCHITECTURE.html`
+- **This is completely optional** — not required for dev or prod builds
+
+**Complete viewing guide:** See [ARCHITECTURE-VIEWING-GUIDE.md](ARCHITECTURE-VIEWING-GUIDE.md) for:
+- Detailed setup instructions
+- Viewing options for all platforms
+- Build compatibility (clean/edited builds work perfectly)
+- Export options
+- Troubleshooting
+- FAQ
+
+**Important:** mermaid-cli is NOT a build dependency. Clean builds and edited builds work perfectly without it. The diagrams use standard Mermaid syntax that renders natively in modern markdown viewers and GitHub.
+
 **App structure (app factory pattern):**
 - `app/__init__.py` — factory function `create_app()`, DB init, seeds default User on startup
 - `app/models.py` — four ORM models: `User`, `Item`, `Song`, `Rating` (see Models section below)
@@ -128,6 +161,12 @@ For convenience, use `make` to manage the project:
 - `make minify` — Minify CSS and HTML assets once (20% reduction on CSS, 5-22% on HTML)
 - `make minify-watch` — Auto-minify CSS/HTML on file changes (watch mode for active development)
 - **Note:** Minification runs automatically in Docker builds (dev and prod); these targets are for pre-commit optimization
+
+**Architecture & Design:**
+- `make arch` — Show architecture diagram locations and viewing options
+- `make arch-html` — Export HTML version of diagrams (optional, requires mermaid-cli)
+  - **Note:** Diagrams render automatically in GitHub, VS Code, and most markdown viewers
+  - mermaid-cli is NOT required for development or production builds
 
 **Production:**
 - `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) **Requires DB_PASSWORD env var**

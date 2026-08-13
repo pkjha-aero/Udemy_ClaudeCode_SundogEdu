@@ -1,4 +1,4 @@
-.PHONY: help setup minify minify-watch dev prod stop logs test test-coverage security build clean perf perf-commit
+.PHONY: help setup minify minify-watch arch arch-html dev prod stop logs test test-coverage security build clean perf perf-commit
 
 # Variables
 VENV_DIR := venv
@@ -25,6 +25,10 @@ help: ## Show this help message
 	@echo "$(GREEN)Minification:$(NC)"
 	@echo "  make minify         - Minify CSS and HTML assets once"
 	@echo "  make minify-watch   - Watch and auto-minify CSS/HTML on changes"
+	@echo ""
+	@echo "$(GREEN)Documentation & Architecture:$(NC)"
+	@echo "  make arch           - View system architecture (Mermaid diagrams in ARCHITECTURE.md)"
+	@echo "  make arch-html      - Generate HTML version of architecture diagrams"
 	@echo ""
 	@echo "$(GREEN)Production:$(NC)"
 	@echo "  make prod           - Start production stack (PostgreSQL, Nginx, port 80)"
@@ -55,6 +59,7 @@ help: ## Show this help message
 	@echo "  make test && make dev             - Run tests then start dev"
 	@echo "  make minify                       - Minify assets before commit"
 	@echo "  make minify-watch                 - Auto-minify during development"
+	@echo "  make arch                         - View architecture diagrams"
 	@echo "  make security                     - Run local security analysis"
 	@echo "  make perf                         - Generate performance report"
 	@echo "  make perf-commit                  - Generate and commit performance report"
@@ -82,6 +87,47 @@ minify: ## Minify CSS and HTML assets once
 minify-watch: ## Watch and auto-minify CSS/HTML on changes
 	@echo "$(BLUE)👀 Starting minification watch mode...$(NC)"
 	$(PYTHON) scripts/minify.py watch
+
+## Architecture & Documentation
+
+arch: ## View system architecture diagrams (in ARCHITECTURE.md)
+	@echo "$(BLUE)📐 System Architecture - Radio Calico$(NC)"
+	@echo ""
+	@echo "$(GREEN)✅ No installation needed - diagrams render automatically!$(NC)"
+	@echo ""
+	@echo "9 Mermaid diagrams in ARCHITECTURE.md:"
+	@echo "  1️⃣  High-Level Architecture"
+	@echo "  2️⃣  Component Architecture"
+	@echo "  3️⃣  Data Flow - Rating Workflow"
+	@echo "  4️⃣  Docker Deployment Architecture"
+	@echo "  5️⃣  API Endpoints Architecture"
+	@echo "  6️⃣  Database Schema (ER Diagram)"
+	@echo "  7️⃣  Performance Optimization Layers"
+	@echo "  8️⃣  Deployment Environments"
+	@echo "  9️⃣  Security Architecture"
+	@echo ""
+	@echo "$(GREEN)Viewing options:$(NC)"
+	@echo "  • GitHub:             https://github.com/pkjha-aero/Udemy_ClaudeCode_SundogEdu/blob/main/radiocalico/ARCHITECTURE.md"
+	@echo "  • VS Code:            Install 'Markdown Preview Mermaid Support' extension"
+	@echo "  • Mermaid Live:       https://mermaid.live/ (copy/paste diagrams)"
+	@echo "  • Complete guide:     See ARCHITECTURE-VIEWING-GUIDE.md"
+	@echo ""
+	@echo "$(GREEN)Info:$(NC)"
+	@echo "  • Works with clean and edited builds (pure documentation)"
+	@echo "  • NOT a build dependency"
+	@echo "  • Optional: make arch-html (requires npm, only for PNG/SVG export)"
+	@echo ""
+
+arch-html: ## Generate HTML version of architecture diagrams
+	@echo "$(BLUE)🌐 Generating HTML architecture diagrams...$(NC)"
+	@if command -v mmdc >/dev/null 2>&1; then \
+		echo "$(GREEN)✓ mermaid-cli found$(NC)"; \
+		mmdc -i ARCHITECTURE.md -o ARCHITECTURE.html || echo "$(YELLOW)⚠️  Generation failed (optional)$(NC)"; \
+	else \
+		echo "$(YELLOW)ℹ️  mermaid-cli not installed (optional)$(NC)"; \
+		echo "Install with: npm install -g @mermaid-js/mermaid-cli"; \
+		echo "Or use: https://mermaid.live/ for interactive viewing"; \
+	fi
 
 ## Development Mode
 
