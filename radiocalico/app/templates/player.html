@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Radio Calico - Stream Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400&display=swap');
 
     * {
       margin: 0;
@@ -343,14 +345,17 @@
 
     let currentSongId = null;
     let isPlaying = false;
+    let metadataInterval = null;
 
     function togglePlay() {
       if (isPlaying) {
         audio.pause();
         playBtn.textContent = '▶️';
+        clearInterval(metadataInterval);
       } else {
         audio.play();
         playBtn.textContent = '⏸️';
+        metadataInterval = setInterval(fetchMetadata, 30000);
       }
       isPlaying = !isPlaying;
     }
@@ -507,9 +512,23 @@
     }
 
     function fetchMetadata() {
+      const cached = localStorage.getItem('radiocalico-metadata');
+      const lastUpdate = parseInt(localStorage.getItem('radiocalico-metadata-time') || '0', 10);
+      const now = Date.now();
+      const cacheExpiry = 30000;
+
+      if (cached && (now - lastUpdate) < cacheExpiry) {
+        formatMetadata(JSON.parse(cached));
+        return;
+      }
+
       fetch(METADATA_URL)
         .then(response => response.json())
-        .then(data => formatMetadata(data))
+        .then(data => {
+          localStorage.setItem('radiocalico-metadata', JSON.stringify(data));
+          localStorage.setItem('radiocalico-metadata-time', now.toString());
+          formatMetadata(data);
+        })
         .catch(error => {
           console.error('Error fetching metadata:', error);
           trackArtist.textContent = 'Unable to load';
@@ -522,7 +541,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       initStream();
       fetchMetadata();
-      setInterval(fetchMetadata, 10000);
       volumeControl.value = 100;
       setVolume(100);
     });
