@@ -51,6 +51,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - New: MINIFICATION.md documentation and scripts/minify.py
 
 ### Fixed
+- **Production port exposure security issue**: Flask port (5000) no longer exposed directly in production
+  - Changed from `ports: "5000:5000"` to `expose: "5000"` (internal Docker network only)
+  - Only Nginx (port 80) is now exposed externally
+  - Forces all traffic through security layers (rate limiting, security headers)
+  - Matches production security best practices
 - Track rating functionality restored by exempting JSON API endpoints from CSRF protection
 - Import errors resolved by using correct csrf.exempt decorator
 - Docker Compose warnings eliminated by removing obsolete version attribute
@@ -59,6 +64,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - DOCKER.md moved from docker_doc/ to radiocalico/ root for better accessibility
 - Asset minification now runs automatically in Docker builds (no user action needed)
+- Production architecture documented in new PRODUCTION-ARCHITECTURE.md
+
+### Added
+- Production Architecture documentation: PRODUCTION-ARCHITECTURE.md
+  - Correct production network architecture (Nginx → Flask → PostgreSQL)
+  - Port exposure policy (only Nginx external, all others internal)
+  - Security layers explanation
+  - Verification checklist for production setup
+  - Debugging guide for common issues
+  - Common mistakes and how to avoid them
+  - Development vs production architecture comparison
+  - Best practices checklist
 
 ---
 
