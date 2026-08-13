@@ -538,6 +538,12 @@ GitHub Actions workflows do NOT call `make security` because:
 
 ## Production Deployment
 
+**Security Architecture:** See [PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md) for:
+- Correct port exposure (Nginx on 80, Flask internal, PostgreSQL internal)
+- Security layers (reverse proxy, rate limiting, security headers)
+- Verification checklist
+- Common mistakes and how to avoid them
+
 **Database**: PostgreSQL 16 (Alpine)
 - Configure via `DB_PASSWORD` environment variable (defaults to "radiocalico")
 - Connection string: `postgresql://radiocalico:password@postgres:5432/radiocalico`

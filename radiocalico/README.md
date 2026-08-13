@@ -71,6 +71,7 @@ make security          # Run security analysis (Bandit + Safety)
 
 ## Documentation
 
+- **[PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md)** — Production security architecture, port exposure, and best practices
 - **[DATABASE-MANAGEMENT.md](DATABASE-MANAGEMENT.md)** — When and how to clean up databases (decision tree included)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — System design diagrams (9 Mermaid diagrams, rendered automatically)
   - Data flow, components, deployment topology, database schema, security

@@ -7,10 +7,11 @@ This guide covers containerizing and deploying the Radio Calico application usin
 The Docker setup includes:
 - **Development Image**: Flask with hot-reload, debug mode, SQLite database, all dev dependencies
 - **Production Image**: Optimized with Gunicorn, minimal dependencies, non-root user
-- **PostgreSQL 16**: Production database (Alpine Linux, health-checked)
-- **Nginx Reverse Proxy**: Production-grade reverse proxy on port 80
+- **PostgreSQL 16**: Production database (Alpine Linux, health-checked, internal only)
+- **Nginx Reverse Proxy**: Production-grade reverse proxy on port 80 (only external port)
 - **Docker Compose**: Orchestration for both dev and prod environments
 - **Health Checks**: PostgreSQL readiness check + Flask HTTP health check
+- **Security Architecture**: See [PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md) for detailed port exposure and security best practices
 
 ## Architecture
 

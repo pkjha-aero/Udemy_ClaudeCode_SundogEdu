@@ -25,8 +25,11 @@ services:
     image: radiocalico:prod
     container_name: radiocalico-prod
     restart: always
-    ports:
-      - "5000:5000"
+    # NOTE: Port 5000 NOT exposed externally (internal only)
+    # Nginx reverse proxy (port 80) is the ONLY external port
+    # This ensures Flask is only accessible through Nginx (security best practice)
+    expose:
+      - "5000"
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
