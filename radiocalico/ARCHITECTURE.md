@@ -18,6 +18,11 @@ Comprehensive system design for the Radio Calico application, showing data flow,
 
 ## High-Level Architecture
 
+**Port Exposure Policy:**
+- 🟢 **Port 80/443** (Nginx) — EXPOSED to public internet
+- 🔴 **Port 5000** (Flask/Gunicorn) — Internal Docker network ONLY
+- 🔴 **Port 5432** (PostgreSQL) — Internal Docker network ONLY
+
 ```mermaid
 graph TB
     subgraph "External Services"
@@ -30,14 +35,14 @@ graph TB
     end
 
     subgraph "Development Stack"
-        DevServer["Flask Dev Server<br/>(Port 5000)<br/>Debug Mode"]
+        DevServer["Flask Dev Server<br/>(Port 5000 EXPOSED)<br/>Debug Mode"]
         DevDB["SQLite<br/>(instance/radiocalico.db)"]
     end
 
-    subgraph "Production Stack"
-        Nginx["Nginx Reverse Proxy<br/>(Port 80/443)<br/>Rate Limiting<br/>Security Headers"]
-        Gunicorn["Gunicorn Workers<br/>(4 workers)<br/>Port 5000 internal"]
-        ProdDB["PostgreSQL 16<br/>(Port 5432)<br/>Alpine"]
+    subgraph "Production Stack (Secure)"
+        Nginx["Nginx Reverse Proxy<br/>(Port 80/443 EXPOSED)<br/>Rate Limiting<br/>Security Headers"]
+        Gunicorn["Gunicorn Workers<br/>(4 workers)<br/>Port 5000 INTERNAL ONLY"]
+        ProdDB["PostgreSQL 16<br/>(Port 5432 INTERNAL)<br/>Alpine"]
     end
 
     subgraph "Application Layer"
@@ -159,41 +164,95 @@ sequenceDiagram
 
 ## Docker Deployment Architecture
 
+**Port Exposure Summary:**
+- Dev: Port 5000 exposed for debugging
+- Prod: Only port 80/443 exposed (Nginx), ports 5000 & 5432 internal
+
 ```mermaid
 graph TB
     subgraph "Development (docker compose)"
         DevVol["Volume: app/"]
         DevImg["Image: radiocalico:dev<br/>Python 3.12 slim<br/>Flask dev server<br/>Hot reload"]
-        DevCont["Container: radiocalico-dev<br/>Port: 5000<br/>Mount: /app (host)<br/>Env: DEBUG=True"]
+        DevCont["Container: radiocalico-dev<br/>Port: 5000 🟢 EXPOSED<br/>Mount: /app (host)<br/>Env: DEBUG=True"]
     end
 
     subgraph "Production (docker-compose.prod.yml)"
-        subgraph "Reverse Proxy"
+        subgraph "Public Internet"
+            Internet["🌐 Public (Port 80/443)"]
+        end
+        
+        subgraph "Reverse Proxy (EXPOSED)"
             NginxImg["Image: nginx:alpine<br/>Reverse proxy<br/>Rate limiting<br/>Security headers"]
-            NginxCont["Container: nginx<br/>Port: 80/443<br/>Config: nginx.conf"]
+            NginxCont["Container: nginx<br/>Port: 80/443 🟢 EXPOSED<br/>Config: nginx.conf"]
         end
         
-        subgraph "Application"
-            GunicornImg["Image: radiocalico:prod<br/>Python 3.12 slim<br/>Gunicorn WSGI<br/>4 workers"]
-            GunicornCont["Container: radiocalico-prod<br/>Port: 5000 (internal)<br/>Env: PRODUCTION=true"]
-        end
-        
-        subgraph "Database"
-            PgImg["Image: postgres:16-alpine<br/>Official PostgreSQL"]
-            PgCont["Container: postgres<br/>Port: 5432 (internal)<br/>Vol: radiocalico-db<br/>Env: DB_PASSWORD"]
+        subgraph "Internal Docker Network"
+            subgraph "Application (INTERNAL)"
+                GunicornImg["Image: radiocalico:prod<br/>Python 3.12 slim<br/>Gunicorn WSGI<br/>4 workers"]
+                GunicornCont["Container: radiocalico-prod<br/>Port: 5000 🔴 INTERNAL ONLY<br/>Env: PRODUCTION=true"]
+            end
+            
+            subgraph "Database (INTERNAL)"
+                PgImg["Image: postgres:16-alpine<br/>Official PostgreSQL"]
+                PgCont["Container: postgres<br/>Port: 5432 🔴 INTERNAL ONLY<br/>Vol: radiocalico-db<br/>Env: DB_PASSWORD"]
+            end
         end
     end
 
     DevCont -->|Reads/Writes| DevVol
     DevImg -->|Container| DevCont
     
+    Internet -->|HTTP/HTTPS| NginxCont
     NginxImg -->|Container| NginxCont
     GunicornImg -->|Container| GunicornCont
     PgImg -->|Container| PgCont
     
-    NginxCont -->|Port 80| GunicornCont
-    GunicornCont -->|TCP 5432| PgCont
+    NginxCont -->|Internal<br/>Port 5000| GunicornCont
+    GunicornCont -->|Internal<br/>TCP 5432| PgCont
 ```
+
+## Production Port Exposure (Security)
+
+**Only Nginx is exposed to public internet. All application services are internal.**
+
+```mermaid
+graph TB
+    Internet["🌐 Public Internet"]
+    Localhost["💻 localhost / 127.0.0.1"]
+    
+    subgraph "Exposed to Public (🟢 External)"
+        Port80["Port 80/443<br/>(Nginx Reverse Proxy)<br/>✅ Accessible"]
+    end
+    
+    subgraph "Internal Docker Network (🔴 Internal Only)"
+        Port5000["Port 5000<br/>(Flask/Gunicorn)<br/>❌ NOT Accessible<br/>from outside"]
+        Port5432["Port 5432<br/>(PostgreSQL)<br/>❌ NOT Accessible<br/>from outside"]
+    end
+    
+    Internet -->|HTTP/HTTPS| Port80
+    Localhost -->|Port 80| Port80
+    Localhost -->|Port 5000| Port5000
+    Localhost -->|Port 5432| Port5432
+    
+    Port80 -->|Internal only<br/>Docker network| Port5000
+    Port5000 -->|Internal only<br/>Docker network| Port5432
+    
+    style Port80 fill:#90EE90
+    style Port5000 fill:#FFB6C6
+    style Port5432 fill:#FFB6C6
+    style Internet fill:#87CEEB
+    style Localhost fill:#87CEEB
+```
+
+**Access Behavior:**
+- ✅ `curl http://localhost/` → Works (via Nginx, port 80)
+- ✅ `curl http://localhost:80/` → Works (via Nginx, port 80)
+- ❌ `curl http://localhost:5000/` → Connection refused (correct!)
+- ❌ `curl http://localhost:5432` → Connection refused (correct!)
+
+**Why:** Only reverse proxy (Nginx) is exposed. Flask and PostgreSQL are accessible only through the Docker internal network.
+
+See [PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md) for complete security documentation.
 
 ## API Endpoints Architecture
 
@@ -325,18 +384,24 @@ graph TB
 
 ## Deployment Environments
 
+**Port Exposure by Environment:**
+- **Dev:** Port 5000 (Flask, exposed for debugging)
+- **Docker Dev:** Port 5000 (Flask, exposed for debugging)
+- **Docker Prod:** Port 80 (Nginx, exposed) + Port 5000 (Flask, internal) + Port 5432 (PostgreSQL, internal)
+- **Production:** Port 80/443 (Nginx, exposed) + Port 5000 (Flask, internal) + Port 5432 (PostgreSQL, internal)
+
 ```mermaid
 graph TB
     subgraph "Local Development"
-        Dev["make dev<br/>- Flask debug mode<br/>- SQLite database<br/>- Hot reload<br/>- Port 5000"]
+        Dev["make dev<br/>- Flask debug mode<br/>- SQLite database<br/>- Hot reload<br/>- Port 5000 🟢 EXPOSED"]
     end
     
     subgraph "Local Docker Dev"
-        DockerDev["make dev (Docker)<br/>- docker compose up<br/>- Flask in container<br/>- SQLite in volume<br/>- Port 5000"]
+        DockerDev["make dev (Docker)<br/>- docker compose up<br/>- Flask in container<br/>- SQLite in volume<br/>- Port 5000 🟢 EXPOSED"]
     end
     
     subgraph "Local Docker Production"
-        DockerProd["make prod<br/>- PostgreSQL in container<br/>- Gunicorn + Nginx<br/>- Health checks<br/>- Port 80"]
+        DockerProd["make prod<br/>- PostgreSQL in container<br/>- Gunicorn + Nginx<br/>- Health checks<br/>- Port 80 🟢 + 5000/5432 🔴 INTERNAL"]
     end
     
     subgraph "CI/CD Pipeline"
@@ -344,7 +409,7 @@ graph TB
     end
     
     subgraph "Production Deployment"
-        Prod["Production Server<br/>- PostgreSQL (managed)<br/>- Gunicorn load balancer<br/>- Nginx reverse proxy<br/>- SSL/TLS termination<br/>- Rate limiting"]
+        Prod["Production Server<br/>- PostgreSQL (managed)<br/>- Gunicorn load balancer<br/>- Nginx reverse proxy<br/>- SSL/TLS termination<br/>- Rate limiting<br/>- Port 80/443 🟢 EXPOSED"]
     end
     
     Dev -.->|Test locally| DockerDev
