@@ -152,9 +152,13 @@ Site implements Radio Calico brand style guide:
 
 For convenience, use `make` to manage the project:
 
+**Image Building Note:** See [DOCKER-IMAGE-MANAGEMENT.md](DOCKER-IMAGE-MANAGEMENT.md) for comprehensive guide on when Docker images are built vs. used. Quick summary:
+- `make dev` / `make prod` — ⚡ Auto-build image if missing, then run
+- `make build` / `make build-dev` / `make build-prod` — 🔨 Always build (explicit)
+
 **Development:**
-- `make dev` — Start dev server (Flask + SQLite, port 5000)
-- `make dev-clean` — Clean and restart dev environment
+- `make dev` — Start dev server (Flask + SQLite, port 5000) [⚡ auto-builds image if missing]
+- `make dev-clean` — Clean and restart dev environment (removes volumes, rebuilds image)
 - `make setup` — Install dependencies in virtual environment
 
 **Asset Optimization:**
@@ -169,13 +173,38 @@ For convenience, use `make` to manage the project:
   - mermaid-cli is NOT required for development or production builds
 
 **Production:**
-- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) **Requires DB_PASSWORD env var**
+- `make prod` — Start prod stack (PostgreSQL + Gunicorn + Nginx, port 80) [⚡ auto-builds image if missing] **Requires DB_PASSWORD env var**
   ```bash
   export DB_PASSWORD=$(openssl rand -base64 32)
   make prod
   ```
-- `make prod-build` — Build production Docker images (includes minification)
+- `make prod-build` — Build production Docker images explicitly (🔨 always builds)
 - `make prod-stop` — Stop production stack
+
+**Docker Image Building:**
+- `make build` — Build both dev and prod images explicitly (🔨 always builds)
+- `make build-dev` — Build dev image explicitly (🔨 always builds)
+- `make build-prod` — Build prod image explicitly (🔨 always builds)
+- **When to use:** After changing requirements.txt, Dockerfile, or dependencies — see [DOCKER-IMAGE-MANAGEMENT.md](DOCKER-IMAGE-MANAGEMENT.md)
+
+**Database Management:**
+- `make db-help` — Show all database commands with descriptions
+- `make db-status` — Show status of dev (SQLite) and prod (PostgreSQL) databases
+- `make db-backup` — Backup both databases
+- **Development (SQLite):**
+  - `make db-init-dev` — Initialize database manually
+  - `make db-clean-dev` — Remove database (hard delete)
+  - `make db-reset-dev` — Clean + reinitialize (fresh start)
+  - `make db-backup-dev` — Backup SQLite file
+  - `make db-status-dev` — Show dev database status
+- **Production (PostgreSQL):**
+  - `make db-init-prod` — Initialize database manually
+  - `make db-clean-prod` — Remove database (hard delete)
+  - `make db-reset-prod` — Clean + reinitialize (fresh start)
+  - `make db-backup-prod` — Backup PostgreSQL database
+  - `make db-restore-prod` — Restore from backup: `make db-restore-prod BACKUP=backups/prod-2026-08-12.sql`
+  - `make db-status-prod` — Show prod database status
+- **When to clean:** See [DATABASE-MANAGEMENT.md](DATABASE-MANAGEMENT.md) for complete decision tree
 
 **Testing:**
 - `make test` — Run all 149 tests (fast, no coverage requirement) — use during development for quick feedback
@@ -192,13 +221,12 @@ For convenience, use `make` to manage the project:
 - `make perf-commit` — Generate performance report and commit it to git
 
 **Utilities:**
-- `make build` — Build all Docker images
 - `make logs-dev` — View development logs
 - `make logs-prod` — View production logs
 - `make health` — Check health endpoints
 - `make status` — Show container status
-- `make stop` — Stop all containers
-- `make clean` — Remove containers and volumes
+- `make stop` — Stop all containers (dev and prod)
+- `make clean` — Remove containers and volumes (doesn't rebuild)
 - `make reset` — Full reset to clean state
 
 **Examples:**
