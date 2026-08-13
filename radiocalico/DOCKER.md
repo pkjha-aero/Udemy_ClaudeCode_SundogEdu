@@ -177,6 +177,8 @@ radiocalico     dev        abc123def456    2 minutes ago    520MB
 radiocalico     prod       xyz789ghi012    2 minutes ago    380MB
 ```
 
+**Note**: Both build stages automatically minify CSS and HTML assets during the build process (via `python scripts/minify.py`), reducing file sizes by ~20% on CSS and 5-22% on HTML templates. For manual minification before committing, use `make minify` or `make minify-watch`. See [MINIFICATION.md](MINIFICATION.md) for details.
+
 ## Running Containers
 
 ### Development

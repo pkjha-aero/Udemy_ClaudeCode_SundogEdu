@@ -36,6 +36,9 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 # Copy entire app
 COPY . .
 
+# Minify assets
+RUN python scripts/minify.py
+
 # Create instance directory for database
 RUN mkdir -p /app/instance
 
@@ -63,6 +66,10 @@ COPY --chown=1000:1000 run.py .
 COPY --chown=1000:1000 stream_URL.txt .
 COPY --chown=1000:1000 RadioCalico_Style_Guide.txt .
 COPY --chown=1000:1000 RadioCalicoLogoTM.png .
+COPY --chown=1000:1000 scripts ./scripts
+
+# Minify assets (before switching to non-root user so Python can write)
+RUN python scripts/minify.py
 
 # Create instance directory for database with correct ownership
 RUN mkdir -p /app/instance && chown -R 1000:1000 /app/instance

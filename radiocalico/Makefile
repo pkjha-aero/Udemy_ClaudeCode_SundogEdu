@@ -1,4 +1,4 @@
-.PHONY: help setup dev prod stop logs test test-coverage security build clean perf perf-commit
+.PHONY: help setup minify minify-watch dev prod stop logs test test-coverage security build clean perf perf-commit
 
 # Variables
 VENV_DIR := venv
@@ -21,6 +21,10 @@ help: ## Show this help message
 	@echo "  make setup          - Set up virtual environment and install dependencies"
 	@echo "  make dev            - Start development server (SQLite, port 5000)"
 	@echo "  make dev-clean      - Clean and start fresh development environment"
+	@echo ""
+	@echo "$(GREEN)Minification:$(NC)"
+	@echo "  make minify         - Minify CSS and HTML assets once"
+	@echo "  make minify-watch   - Watch and auto-minify CSS/HTML on changes"
 	@echo ""
 	@echo "$(GREEN)Production:$(NC)"
 	@echo "  make prod           - Start production stack (PostgreSQL, Nginx, port 80)"
@@ -49,6 +53,8 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(GREEN)Examples:$(NC)"
 	@echo "  make test && make dev             - Run tests then start dev"
+	@echo "  make minify                       - Minify assets before commit"
+	@echo "  make minify-watch                 - Auto-minify during development"
 	@echo "  make security                     - Run local security analysis"
 	@echo "  make perf                         - Generate performance report"
 	@echo "  make perf-commit                  - Generate and commit performance report"
@@ -65,6 +71,17 @@ setup: ## Set up virtual environment and install dependencies
 	$(PIP) install -r requirements.txt
 	@echo "$(GREEN)✅ Setup complete!$(NC)"
 	@echo "Activate with: source $(VENV_DIR)/bin/activate"
+
+## Asset Minification
+
+minify: ## Minify CSS and HTML assets once
+	@echo "$(BLUE)🔧 Running asset minification...$(NC)"
+	$(PYTHON) scripts/minify.py
+	@echo "$(GREEN)✅ Minification complete$(NC)"
+
+minify-watch: ## Watch and auto-minify CSS/HTML on changes
+	@echo "$(BLUE)👀 Starting minification watch mode...$(NC)"
+	$(PYTHON) scripts/minify.py watch
 
 ## Development Mode
 
