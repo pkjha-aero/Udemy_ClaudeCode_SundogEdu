@@ -1,6 +1,7 @@
-# Claude GitHub Actions Setup (Opus 5 + Pro subscription)
+# Claude GitHub Actions Setup (Pro subscription)
 
-This repository's Claude workflows run on **Claude Opus 5**, authenticated with a
+This repository's Claude workflows run on **Claude Sonnet 5** (automated PR review) and
+**Claude Opus 5** (`@claude`), authenticated with a
 **`CLAUDE_CODE_OAUTH_TOKEN`** so that usage bills against a **Claude Pro subscription**
 instead of API credits.
 
@@ -28,7 +29,7 @@ migrated to that action.
 |---|---|---|
 | Invocation | hand-rolled `anthropic` SDK | `anthropics/claude-code-action@v1` |
 | Secret | `ANTHROPIC_API_KEY` | `CLAUDE_CODE_OAUTH_TOKEN` |
-| Model | `claude-haiku-4-5-20251001` | `claude-opus-5` |
+| Model | `claude-haiku-4-5-20251001` | `claude-sonnet-5` (review) / `claude-opus-5` (`@claude`) |
 | Billing | API credits | Pro subscription |
 
 ---
@@ -122,17 +123,32 @@ Deleting the secret does not revoke the key itself — retire it in the
 
 ## Workflows in this repository
 
-| Workflow | Mode | Trigger | Output |
-|---|---|---|---|
-| [`claude.yml`](workflows/claude.yml) | Interactive | `@claude` in an issue, PR comment, review, or new issue | Comment on the issue/PR |
-| [`claude-code-review.yml`](workflows/claude-code-review.yml) | Automation | Every PR touching code paths | **Actions run log** |
+| Workflow | Model | Mode | Trigger | Output |
+|---|---|---|---|---|
+| [`claude.yml`](workflows/claude.yml) | `claude-opus-5` | Interactive | `@claude` in an issue, PR comment, review, or new issue | Comment on the issue/PR |
+| [`claude-code-review.yml`](workflows/claude-code-review.yml) | `claude-sonnet-5` | Automation | Every PR touching code paths | **Actions run log** |
 
-Both pin the model with:
+Each pins its model explicitly:
 
 ```yaml
 claude_args: |
-  --model claude-opus-5
+  --model claude-sonnet-5     # or claude-opus-5
 ```
+
+### Why the models differ
+
+OAuth-authenticated runs draw from the **same Pro rate limits as your interactive Claude
+Code sessions**, so an expensive model on a high-frequency workflow does not merely cost
+more — it consumes headroom you would otherwise spend working.
+
+- **`claude-code-review.yml` → Sonnet 5.** Runs unattended on every PR touching code, so it
+  is the volume driver. Sonnet 5 is strong at code review; Opus adds little here for
+  substantially more usage.
+- **`claude.yml` → Opus 5.** Manual, lower frequency, and often asked to implement
+  multi-step changes, where the stronger model earns its cost.
+
+To change either, edit the `--model` line in that workflow. Omitting `--model` entirely
+falls back to the Claude Code default model.
 
 ### Note on review output
 
@@ -190,6 +206,42 @@ one you have:
 | `claude_code_oauth_token: ***` present | Token resolved correctly |
 | `claude_code_oauth_token` absent from `with:` | Secret missing or misnamed |
 | `Workflow validation failed` | Workflow differs from default branch — merge first |
+
+**"Reached maximum number of turns" / Claude gives up without making changes**
+
+Check `permission_denials_count` in the run's result JSON. A non-zero count means Claude
+tried a tool it was not granted, retried, and burned turns until it hit `--max-turns`.
+
+Two distinct causes:
+
+1. **Missing edit tools.** By default this action's session runs with `Glob`, `Grep`, `LS`,
+   `Read` plus git commands — no `Edit`/`Write`/`MultiEdit`. Claude can read and commit but
+   cannot change a file. `claude.yml` now grants them through the `settings` input.
+
+   Grant tools via `settings`, **not** `--allowedTools`: the latter *replaces* the action's
+   tool list, which strips `mcp__github_comment__update_claude_comment` and leaves Claude
+   unable to post its reply at all.
+
+2. **The request was impossible.** See the next entry.
+
+**Claude cannot edit `.github/workflows/**`**
+
+The Claude GitHub App's permissions deny workflow modifications — a deliberate guard, since
+write access to workflows is effectively write access to CI secrets. The action states this
+in its own system prompt:
+
+> Modify files in the .github/workflows directory (GitHub App permissions do not allow
+> workflow modifications)
+
+So `@claude fix <something in a workflow file>` can never succeed as-is. It will consume
+turns and fail. Options:
+
+- Make workflow edits yourself (or with local Claude Code, which has no such restriction)
+- Use a **custom GitHub App** with the `workflows` permission, passed via `github_token`
+- Ask Claude to output the intended diff in a comment, then apply it manually
+
+Requests touching repository *settings* — branch protection, rulesets, required checks —
+are likewise out of reach, as the App holds no admin scope.
 
 **Claude doesn't respond to `@claude`**
 - Confirm the GitHub App is installed on the repository

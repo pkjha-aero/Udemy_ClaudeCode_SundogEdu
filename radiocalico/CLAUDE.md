@@ -327,13 +327,14 @@ git push                  # GitHub Actions will run automatically
 
 **CI/CD:** Automated testing, code review, and containerization on every PR:
 - `.github/workflows/tests.yml` — Pytest suite with 88% coverage gate (requires PYTHONPATH=. for module resolution)
-- `.github/workflows/claude-code-review.yml` — AI code review (Claude Opus 5)
+- `.github/workflows/claude-code-review.yml` — AI code review (Claude Sonnet 5)
 - `.github/workflows/docker-build.yml` — Docker image builds + smoke tests
 - `.github/scripts/generate_perf_report.py` — Performance report generator (pure Python, no Claude; run via `make perf`)
 
 ## GitHub Automation & Claude Integration
 
-Claude automation runs on **Claude Opus 5** via the official
+Claude automation runs on **Claude Sonnet 5** (automated PR review) and **Claude Opus 5**
+(`@claude`) via the official
 [`anthropics/claude-code-action@v1`](https://github.com/anthropics/claude-code-action),
 authenticated with a `CLAUDE_CODE_OAUTH_TOKEN` repository secret so usage bills against a
 **Claude Pro subscription rather than API credits**.
