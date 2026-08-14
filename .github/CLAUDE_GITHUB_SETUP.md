@@ -171,6 +171,26 @@ concise helps, since Claude reads it on every run.
 
 ## Troubleshooting
 
+**"Workflow validation failed... must have identical content to the default branch"**
+
+Expected, not a misconfiguration. `claude-code-action` refuses to run when the workflow
+file on the PR branch differs from the copy on the default branch — otherwise anyone
+opening a PR could rewrite the workflow and exfiltrate the token.
+
+This means **any PR that modifies `claude.yml` or `claude-code-review.yml` cannot exercise
+its own changes.** The job still reports success; the action simply skips with this warning.
+The workflow starts working once the PR merges to `main`.
+
+Consequence for testing: validate changes to these workflows *after* merging, not on the PR
+that makes them. Auth problems and validation skips look similar in the log, so check which
+one you have:
+
+| Log signal | Meaning |
+|---|---|
+| `claude_code_oauth_token: ***` present | Token resolved correctly |
+| `claude_code_oauth_token` absent from `with:` | Secret missing or misnamed |
+| `Workflow validation failed` | Workflow differs from default branch — merge first |
+
 **Claude doesn't respond to `@claude`**
 - Confirm the GitHub App is installed on the repository
 - Confirm `CLAUDE_CODE_OAUTH_TOKEN` exists (`gh secret list`)
