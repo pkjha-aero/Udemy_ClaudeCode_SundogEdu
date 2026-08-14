@@ -207,6 +207,42 @@ one you have:
 | `claude_code_oauth_token` absent from `with:` | Secret missing or misnamed |
 | `Workflow validation failed` | Workflow differs from default branch — merge first |
 
+**"Reached maximum number of turns" / Claude gives up without making changes**
+
+Check `permission_denials_count` in the run's result JSON. A non-zero count means Claude
+tried a tool it was not granted, retried, and burned turns until it hit `--max-turns`.
+
+Two distinct causes:
+
+1. **Missing edit tools.** By default this action's session runs with `Glob`, `Grep`, `LS`,
+   `Read` plus git commands — no `Edit`/`Write`/`MultiEdit`. Claude can read and commit but
+   cannot change a file. `claude.yml` now grants them through the `settings` input.
+
+   Grant tools via `settings`, **not** `--allowedTools`: the latter *replaces* the action's
+   tool list, which strips `mcp__github_comment__update_claude_comment` and leaves Claude
+   unable to post its reply at all.
+
+2. **The request was impossible.** See the next entry.
+
+**Claude cannot edit `.github/workflows/**`**
+
+The Claude GitHub App's permissions deny workflow modifications — a deliberate guard, since
+write access to workflows is effectively write access to CI secrets. The action states this
+in its own system prompt:
+
+> Modify files in the .github/workflows directory (GitHub App permissions do not allow
+> workflow modifications)
+
+So `@claude fix <something in a workflow file>` can never succeed as-is. It will consume
+turns and fail. Options:
+
+- Make workflow edits yourself (or with local Claude Code, which has no such restriction)
+- Use a **custom GitHub App** with the `workflows` permission, passed via `github_token`
+- Ask Claude to output the intended diff in a comment, then apply it manually
+
+Requests touching repository *settings* — branch protection, rulesets, required checks —
+are likewise out of reach, as the App holds no admin scope.
+
 **Claude doesn't respond to `@claude`**
 - Confirm the GitHub App is installed on the repository
 - Confirm `CLAUDE_CODE_OAUTH_TOKEN` exists (`gh secret list`)
