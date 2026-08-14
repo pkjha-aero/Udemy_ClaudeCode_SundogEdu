@@ -1,6 +1,7 @@
-# Claude GitHub Actions Setup (Opus 5 + Pro subscription)
+# Claude GitHub Actions Setup (Pro subscription)
 
-This repository's Claude workflows run on **Claude Opus 5**, authenticated with a
+This repository's Claude workflows run on **Claude Sonnet 5** (automated PR review) and
+**Claude Opus 5** (`@claude`), authenticated with a
 **`CLAUDE_CODE_OAUTH_TOKEN`** so that usage bills against a **Claude Pro subscription**
 instead of API credits.
 
@@ -28,7 +29,7 @@ migrated to that action.
 |---|---|---|
 | Invocation | hand-rolled `anthropic` SDK | `anthropics/claude-code-action@v1` |
 | Secret | `ANTHROPIC_API_KEY` | `CLAUDE_CODE_OAUTH_TOKEN` |
-| Model | `claude-haiku-4-5-20251001` | `claude-opus-5` |
+| Model | `claude-haiku-4-5-20251001` | `claude-sonnet-5` (review) / `claude-opus-5` (`@claude`) |
 | Billing | API credits | Pro subscription |
 
 ---
@@ -122,17 +123,32 @@ Deleting the secret does not revoke the key itself — retire it in the
 
 ## Workflows in this repository
 
-| Workflow | Mode | Trigger | Output |
-|---|---|---|---|
-| [`claude.yml`](workflows/claude.yml) | Interactive | `@claude` in an issue, PR comment, review, or new issue | Comment on the issue/PR |
-| [`claude-code-review.yml`](workflows/claude-code-review.yml) | Automation | Every PR touching code paths | **Actions run log** |
+| Workflow | Model | Mode | Trigger | Output |
+|---|---|---|---|---|
+| [`claude.yml`](workflows/claude.yml) | `claude-opus-5` | Interactive | `@claude` in an issue, PR comment, review, or new issue | Comment on the issue/PR |
+| [`claude-code-review.yml`](workflows/claude-code-review.yml) | `claude-sonnet-5` | Automation | Every PR touching code paths | **Actions run log** |
 
-Both pin the model with:
+Each pins its model explicitly:
 
 ```yaml
 claude_args: |
-  --model claude-opus-5
+  --model claude-sonnet-5     # or claude-opus-5
 ```
+
+### Why the models differ
+
+OAuth-authenticated runs draw from the **same Pro rate limits as your interactive Claude
+Code sessions**, so an expensive model on a high-frequency workflow does not merely cost
+more — it consumes headroom you would otherwise spend working.
+
+- **`claude-code-review.yml` → Sonnet 5.** Runs unattended on every PR touching code, so it
+  is the volume driver. Sonnet 5 is strong at code review; Opus adds little here for
+  substantially more usage.
+- **`claude.yml` → Opus 5.** Manual, lower frequency, and often asked to implement
+  multi-step changes, where the stronger model earns its cost.
+
+To change either, edit the `--model` line in that workflow. Omitting `--model` entirely
+falls back to the Claude Code default model.
 
 ### Note on review output
 

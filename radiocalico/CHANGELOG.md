@@ -9,10 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Changed
-- **Claude GitHub automation migrated to Opus 5 on Pro subscription billing**
+- **Claude GitHub automation migrated to Pro subscription billing**
   - Replaced hand-rolled `anthropic` SDK calls with official `anthropics/claude-code-action@v1`
   - Auth switched from `ANTHROPIC_API_KEY` (API credits) to `CLAUDE_CODE_OAUTH_TOKEN` (Pro subscription)
-  - Model upgraded from `claude-haiku-4-5-20251001` to `claude-opus-5`
+  - Models: `claude-sonnet-5` for automated PR review (runs on every PR, so it is the
+    volume driver), `claude-opus-5` for `@claude` (manual, lower frequency)
   - Rationale: the OAuth token is a Claude Code credential, not an API key — it cannot be
     passed to the raw `anthropic` SDK, so subscription billing required the official action
   - Removed duplicate PR review (both `claude-code-review.yml` and `claude-integration.yml`
