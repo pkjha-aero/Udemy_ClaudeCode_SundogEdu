@@ -1,18 +1,37 @@
 name: OpenSSF Scorecard
 
+# Scorecard assesses the security posture of the REPOSITORY (branch protection,
+# maintenance, dependency automation, token hygiene), not the contents of an
+# individual pull request. It therefore runs against the default branch only.
+#
+# WHY THERE IS NO `pull_request` TRIGGER:
+# Scorecard's branch-protection check resolves only on the default branch, so a
+# PR run emits fewer SARIF configurations than a main run:
+#
+#   main -> supply-chain/local, supply-chain/online-scm, supply-chain/branch-protection
+#   PR   -> supply-chain/local, supply-chain/online-scm
+#
+# Code scanning then compares the PR against main, finds branch-protection
+# missing, and fails the "Scorecard" check with:
+#
+#   "Code scanning may not have found all the alerts introduced by this pull
+#    request, because 1 configuration present on refs/heads/main was not found"
+#
+# That mismatch is structural and cannot be configured away while PRs are
+# analysed, so PR analysis is removed. This matches OpenSSF's own recommended
+# trigger set. Re-adding `pull_request` will bring the warning back.
+
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  branch_protection_rule:   # re-assess when the thing Scorecard measures changes
   schedule:
     # Weekly on Monday at 2 AM UTC
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  security-events: write
+# Deny by default; the job grants only what it needs (Scorecard: Token-Permissions).
+permissions: {}
 
 jobs:
   scorecard:
@@ -20,16 +39,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      security-events: write   # upload SARIF to the Security tab
 
     steps:
+      # Actions pinned to full commit SHAs (Scorecard: Pinned-Dependencies).
+      # Dependabot bumps these weekly via .github/dependabot.yml.
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:
           persist-credentials: false
 
       - name: Run OpenSSF Scorecard
-        uses: ossf/scorecard-action@v2.4.0
+        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46  # v2.4.0
         continue-on-error: true
         with:
           results_file: results.sarif
@@ -38,68 +59,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@f3712979fa5f215279b101dd0a2e3bdfb4353324  # v3
         with:
           sarif_file: results.sarif
           category: scorecard
-
-  scorecard-comment:
-    name: Scorecard Summary Comment
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      pull-requests: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run OpenSSF Scorecard (for comment)
-        id: scorecard
-        uses: ossf/scorecard-action@v2.4.0
-        continue-on-error: true
-        with:
-          results_file: results.sarif
-          results_format: sarif
-          publish_results: false
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Comment PR with Scorecard results
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const summary = `
-            ## 📊 OpenSSF Scorecard Results
-
-            This repository is assessed against OpenSSF's security best practices framework.
-
-            ### What Scorecard Checks:
-            ✅ Branch protection policies
-            ✅ Code review practices
-            ✅ Dependency update automation
-            ✅ License compliance
-            ✅ Maintenance status
-            ✅ SAST (static analysis) usage
-            ✅ Security policy presence
-            ✅ Token permission restrictions
-            ✅ Vulnerability disclosure
-            ✅ And more...
-
-            ### View Full Results:
-            - **Security Tab** → Scorecard results with detailed scores
-            - **Artifacts** → Download scorecard JSON report
-            - Learn more: https://securityscorecards.dev
-
-            💡 **Note:** Scorecard runs weekly to track improvements in security posture over time.
-
-            🔒 Generated with [Claude Code](https://claude.com/claude-code)
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            })
